@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+export const API_BASE = (
+  process.env.REACT_APP_API_URL || ''
+).replace(/\/$/, '');
+
 const API = axios.create({
-  baseURL: '/api',
+  baseURL: `${API_BASE}/api`,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -37,9 +41,13 @@ API.interceptors.response.use(
     ) {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('token');
-      alert('Phiên đăng nhập admin đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.');
+
+      alert(
+        'Phiên đăng nhập admin đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.'
+      );
+
       window.location.href = '/admin/login';
-      return;
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);
