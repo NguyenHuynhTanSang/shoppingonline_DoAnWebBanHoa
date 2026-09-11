@@ -47,7 +47,6 @@ function CustomerAdminComponent() {
         setMessage(res.data?.message || 'Không thể tải danh sách khách hàng');
       }
     } catch (error) {
-      console.error(error);
       setCustomers([]);
       setMessage(error.response?.data?.message || 'Lỗi tải danh sách khách hàng');
     } finally {
@@ -129,7 +128,6 @@ function CustomerAdminComponent() {
         alert(res.data?.message || 'Không thể cập nhật trạng thái khách hàng');
       }
     } catch (error) {
-      console.error(error);
       alert(error.response?.data?.message || 'Lỗi cập nhật trạng thái khách hàng');
     } finally {
       setUpdatingId('');
@@ -312,7 +310,6 @@ function CustomerAdminComponent() {
                     <div className="admin-customer-detail-grid">
                       <p><strong>ID:</strong> {item._id}</p>
                       <p><strong>Ngày đăng ký:</strong> {formatDate(item.cdate)}</p>
-                      <p><strong>Token kích hoạt:</strong> {item.token || 'Không có'}</p>
                       <p><strong>Trạng thái:</strong> {getStatusText(item.active)}</p>
                     </div>
 

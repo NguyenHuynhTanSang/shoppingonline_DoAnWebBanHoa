@@ -54,7 +54,6 @@ function StaffAdminComponent() {
         setMessage(res.data?.message || 'Không thể tải danh sách nhân viên');
       }
     } catch (error) {
-      console.error(error);
 
       const apiMessage = error.response?.data?.message || '';
       const status = error.response?.status;
@@ -105,7 +104,7 @@ function StaffAdminComponent() {
     setEditingStaff(staff);
     setForm({
       username: staff.username || '',
-      password: staff.password || '',
+      password: '',
       name: staff.name || '',
       phone: staff.phone || '',
       email: staff.email || '',
@@ -138,10 +137,12 @@ function StaffAdminComponent() {
       active: Number(form.active ?? 1)
     };
 
-    if (!payload.username || !payload.password || !payload.name) {
+    if (!payload.username || (!editingStaff && !payload.password) || !payload.name) {
       alert('Vui lòng nhập username, password và tên nhân viên');
       return;
     }
+
+    if (editingStaff && !payload.password) delete payload.password;
 
     try {
       setSaving(true);
@@ -161,7 +162,6 @@ function StaffAdminComponent() {
         alert(res.data?.message || 'Không thể lưu nhân viên');
       }
     } catch (error) {
-      console.error(error);
       alert(error.response?.data?.message || 'Lỗi lưu nhân viên');
     } finally {
       setSaving(false);
@@ -194,7 +194,6 @@ function StaffAdminComponent() {
         alert(res.data?.message || 'Không thể cập nhật trạng thái');
       }
     } catch (error) {
-      console.error(error);
       alert(error.response?.data?.message || 'Lỗi cập nhật trạng thái');
     } finally {
       setTogglingId('');
@@ -222,7 +221,6 @@ function StaffAdminComponent() {
         alert(res.data?.message || 'Không thể xóa nhân viên');
       }
     } catch (error) {
-      console.error(error);
       alert(error.response?.data?.message || 'Lỗi xóa nhân viên');
     } finally {
       setDeletingId('');
@@ -318,8 +316,9 @@ function StaffAdminComponent() {
             />
 
             <input
-              type="text"
-              placeholder="Password"
+              type="password"
+              autoComplete="new-password"
+              placeholder={editingStaff ? 'Mật khẩu mới (để trống để giữ nguyên)' : 'Password'}
               value={form.password}
               onChange={(e) => handleChangeForm('password', e.target.value)}
             />

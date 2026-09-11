@@ -19,6 +19,16 @@ const Models = require('../models/Models');
 // =========================
 // helpers
 // =========================
+function safeAccount(account) {
+  if (!account) return null;
+  // Explicit response allowlist; never mutate the document used by auth/update.
+  const result = {};
+  for (const key of ['_id', 'username', 'name', 'phone', 'email', 'active', 'cdate', 'udate']) {
+    if (account[key] !== undefined) result[key] = account[key];
+  }
+  return result;
+}
+
 function toNumber(v, def = 0) {
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
@@ -399,7 +409,7 @@ router.get(
 
       res.json({
         success: true,
-        staffs: staffs
+        staffs: staffs.map(safeAccount)
       });
     } catch (err) {
       console.error(err);
@@ -464,7 +474,7 @@ router.post(
       res.json({
         success: true,
         message: 'Thêm staff thành công',
-        staff: result
+        staff: safeAccount(result)
       });
     } catch (err) {
       console.error(err);
@@ -499,8 +509,7 @@ router.put(
 
       const username =
         body.username !== undefined ? String(body.username || '').trim() : oldStaff.username;
-      const password =
-        body.password !== undefined ? String(body.password || '').trim() : oldStaff.password;
+      const password = String(body.password || '').trim() || oldStaff.password;
       const name = body.name !== undefined ? String(body.name || '').trim() : oldStaff.name;
       const phone = body.phone !== undefined ? String(body.phone || '').trim() : oldStaff.phone;
       const email = body.email !== undefined ? String(body.email || '').trim() : oldStaff.email;
@@ -556,7 +565,7 @@ router.put(
       res.json({
         success: true,
         message: 'Cập nhật nhân viên thành công',
-        staff: updated
+        staff: safeAccount(updated)
       });
     } catch (err) {
       console.error(err);
@@ -610,7 +619,7 @@ router.put(
       res.json({
         success: true,
         message: 'Cập nhật trạng thái nhân viên thành công',
-        staff: updated
+        staff: safeAccount(updated)
       });
     } catch (err) {
       console.error(err);
@@ -1446,7 +1455,7 @@ router.get(
 
       res.json({
         success: true,
-        customers: customers
+        customers: customers.map(safeAccount)
       });
     } catch (err) {
       console.error(err);
@@ -1488,7 +1497,7 @@ router.put(
       res.json({
         success: true,
         message: 'Cập nhật trạng thái khách hàng thành công',
-        customer
+        customer: safeAccount(customer)
       });
     } catch (err) {
       console.error(err);
