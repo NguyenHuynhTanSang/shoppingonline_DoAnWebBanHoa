@@ -1036,26 +1036,24 @@ router.get(
 );
 
 router.post('/forgot-password', async function (req, res) {
+  const response = {
+    success: true,
+    message: 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu qua email.'
+  };
   try {
-    const email = String(req.body.email || '').trim().toLowerCase();
-    console.log('FORGOT EMAIL =', email);
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
     if (!email) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         message: 'Vui lòng nhập email'
       });
     }
 
     const customer = await CustomerDAO.selectByEmail(email);
-    console.log('FOUND CUSTOMER =', customer ? customer.email : null);
 
     if (!customer) {
-      return res.json({
-        success: true,
-        message:
-          'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu'
-      });
+      return res.json(response);
     }
 
     const resetToken = genRandomToken(24);
@@ -1067,76 +1065,71 @@ router.post('/forgot-password', async function (req, res) {
       resetExpire
     );
 
-    console.log('RESET TOKEN SAVED =', updatedCustomer?.resetPasswordToken);
-    console.log('RESET EXPIRE SAVED =', updatedCustomer?.resetPasswordExpire);
+    if (!updatedCustomer) return res.json(response);
 
     const resetLink = `${MyConstants.CLIENT_URL}/reset-password?token=${resetToken}`;
-    console.log('RESET LINK =', resetLink);
-
-    const mailSent = await Promise.race([
-      EmailUtil.sendResetPasswordEmail(
-        customer.email,
-        customer.name || customer.username,
-        resetLink
-      ),
-      new Promise((resolve) => setTimeout(() => resolve(false), 15000))
-    ]);
-
-    console.log('MAIL SENT =', mailSent);
-
-    if (!mailSent) {
-      return res.status(200).json({
-        success: true,
-        message: 'Không gửi được email, dùng link reset tạm thời',
-        resetLink: resetLink
-      });
+    let timeout;
+    try {
+      const mailSent = await Promise.race([
+        EmailUtil.sendResetPasswordEmail(
+          customer.email,
+          customer.name || customer.username,
+          resetLink
+        ),
+        new Promise((resolve) => { timeout = setTimeout(() => resolve(false), 15000); })
+      ]);
+      if (!mailSent) console.error('Password reset email delivery failed');
+    } catch {
+      console.error('Password reset email delivery failed');
+    } finally {
+      clearTimeout(timeout);
     }
 
-    return res.json({
-      success: true,
-      message: 'Đã gửi link đặt lại mật khẩu tới email của bạn'
-    });
+    return res.json(response);
   } catch (err) {
-    console.error('FORGOT PASSWORD ERROR:', err);
-    return res.status(500).json({
-      success: false,
-      message: err.message || 'Server error'
-    });
+    console.error('Password reset request failed');
+    return res.json(response);
   }
 });
 
 router.post('/reset-password', async function (req, res) {
   try {
-    const token = String(req.body.token || '').trim();
-    const password = String(req.body.password || '').trim();
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password.trim() : '';
 
-    if (!token || !password) {
-      return res.json({
+    if (!token || password.length < 6) {
+      return res.status(400).json({
         success: false,
-        message: 'Thiếu token hoặc mật khẩu mới'
+        message: 'Token không hợp lệ hoặc mật khẩu mới chưa đủ 6 ký tự'
       });
     }
 
     const customer = await CustomerDAO.selectByValidResetToken(token);
 
     if (!customer) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         message: 'Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn'
       });
     }
 
-    await CustomerDAO.resetPasswordByToken(token, password);
+    const updated = await CustomerDAO.resetPasswordByToken(token, password);
+    if (!updated) {
+      return res.status(400).json({
+        success: false,
+        message: 'Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn'
+      });
+    }
 
     return res.json({
       success: true,
       message: 'Đặt lại mật khẩu thành công'
     });
   } catch (err) {
-    console.error('RESET PASSWORD ERROR:', err);
+    console.error('Password reset failed');
     return res.status(500).json({
       success: false,
-      message: err.message || 'Server error'
+      message: 'Không thể đặt lại mật khẩu. Vui lòng thử lại sau.'
     });
   }
 });

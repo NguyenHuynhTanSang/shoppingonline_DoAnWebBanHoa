@@ -57,7 +57,6 @@ function ResetPasswordComponent() {
         setMessage(res.data?.message || 'Đặt lại mật khẩu thất bại');
       }
     } catch (error) {
-      console.error(error);
       setMessage(error.response?.data?.message || 'Không thể kết nối tới server');
     } finally {
       setLoading(false);

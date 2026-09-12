@@ -85,20 +85,24 @@ function badge(label, value) {
   </div>`;
 }
 
-async function sendMailSafe(options) {
+async function sendMailSafe(options, sensitive = false) {
+  let timeout;
   try {
     const result = await Promise.race([
       transporter.sendMail(options),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Email send timeout')), 15000)
+        { timeout = setTimeout(() => reject(new Error('Email send timeout')), 15000); }
       )
     ]);
 
-    console.log('EMAIL SENT OK:', result?.messageId || 'no-message-id');
+    if (!sensitive) console.log('EMAIL SENT OK:', result?.messageId || 'no-message-id');
     return true;
   } catch (err) {
-    console.error('EMAIL SEND ERROR:', err?.message || err);
+    if (sensitive) console.error('Password reset email delivery failed');
+    else console.error('EMAIL SEND ERROR:', err?.message || err);
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -279,9 +283,9 @@ const EmailUtil = {
         subject: 'WIND FLOWER | Đặt lại mật khẩu',
         text,
         html
-      });
+      }, true);
     } catch (err) {
-      console.error('EmailUtil.sendResetPasswordEmail error:', err?.message || err);
+      console.error('Password reset email preparation failed');
       return false;
     }
   }
