@@ -1,0 +1,127 @@
+/* =====================================================
+   WIND FLOWER - BASE
+===================================================== */
+
+:root {
+  --decade-black: #07070a;
+  --decade-black-2: #121218;
+  --decade-black-3: #1a1a22;
+
+  --decade-pink: #d81b60;
+  --decade-pink-dark: #a00044;
+  --decade-pink-soft: #f6d2df;
+
+  --decade-white: #f8f8fb;
+  --decade-silver: #cfd3dc;
+
+  --decade-line:
+    rgba(255, 255, 255, 0.08);
+
+  --decade-shadow:
+    0 10px 28px
+    rgba(0, 0, 0, 0.16);
+
+  --decade-shadow-strong:
+    0 16px 40px
+    rgba(0, 0, 0, 0.22);
+
+  --decade-glow:
+    0 0 0 1px
+      rgba(216, 27, 96, 0.18),
+    0 12px 28px
+      rgba(0, 0, 0, 0.18);
+
+  --decade-gradient:
+    linear-gradient(
+      135deg,
+      #ff3b8a 0%,
+      #d81b60 50%,
+      #8f0038 100%
+    );
+
+  --decade-gradient-dark:
+    linear-gradient(
+      135deg,
+      #1b1b23 0%,
+      #101015 55%,
+      #2a0b19 100%
+    );
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+
+  max-width: 100%;
+
+  overflow-x: hidden;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f5f5f8 0%,
+      #eeeef3 100%
+    );
+
+  color: #16161c;
+
+  font-family:
+    Arial,
+    sans-serif;
+
+  -webkit-font-smoothing:
+    antialiased;
+
+  -moz-osx-font-smoothing:
+    grayscale;
+}
+
+a {
+  color: inherit;
+
+  text-decoration: none;
+
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    opacity 0.25s ease;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+img {
+  max-width: 100%;
+}
+
+code {
+  font-family:
+    source-code-pro,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Courier New',
+    monospace;
+}

@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import MenuComponent from './MenuComponent';
 import InformComponent from './InformComponent';
+import { DELIVERY_TIME_SLOTS, CARD_MESSAGE_LIMIT, vietnamToday, deliveryError } from '../services/delivery';
+
 
 function isValidObjectId(id) {
   return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
@@ -32,6 +34,8 @@ function normalizeCartItems(rawCart) {
 }
 
 function CheckoutComponent() {
+  const checkoutAttempt = useRef(null);
+  const checkoutInFlight = useRef(false);
   const navigate = useNavigate();
 
   const [cart, setCart] = useState([]);
@@ -47,6 +51,9 @@ function CheckoutComponent() {
     phone: '',
     address: '',
     note: '',
+    deliveryDate: '',
+    deliveryTimeSlot: '',
+    cardMessage: '',
     paymentMethod: 'cod'
   });
 
@@ -256,6 +263,7 @@ function CheckoutComponent() {
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    if (checkoutInFlight.current) return;
 
     const customerRaw = localStorage.getItem('customer');
     const customer = customerRaw ? JSON.parse(customerRaw) : null;
@@ -287,7 +295,7 @@ function CheckoutComponent() {
       (formData.paymentMethod === 'bank' || formData.paymentMethod === 'momo') &&
       !isPaidDemo
     ) {
-      alert('Vui lòng xác nhận đã hoàn tất thanh toán demo.');
+      alert('Vui lòng xác nhận mô phỏng thanh toán. Đây không phải xác minh giao dịch thật.');
       return;
     }
 
@@ -297,7 +305,16 @@ function CheckoutComponent() {
       return;
     }
 
+    const validationMessage = deliveryError(formData);
+    if (validationMessage) {
+      alert(validationMessage);
+      return;
+    }
+
     const payload = {
+      deliveryDate: formData.deliveryDate,
+      deliveryTimeSlot: formData.deliveryTimeSlot,
+      cardMessage: formData.cardMessage.trim(),
       customerInfo: {
         fullName: formData.fullName.trim(),
         phone: formData.phone.trim(),
@@ -309,20 +326,25 @@ function CheckoutComponent() {
         _id: item._id,
         quantity: Number(item.quantity || 0)
       })),
-      voucherCode: String(voucherCode || '').trim().toUpperCase(),
-      paymentStatus:
-        formData.paymentMethod === 'cod'
-          ? 'Chờ thanh toán khi nhận hàng'
-          : 'Đã thanh toán demo'
+      voucherCode: String(voucherCode || '').trim().toUpperCase()
     };
 
     try {
+      const intent = JSON.stringify({ customer: customer._id || customer.username, ...payload,
+        items: [...payload.items].sort((a, b) => a._id.localeCompare(b._id)) });
+      if (!checkoutAttempt.current || checkoutAttempt.current.intent !== intent) {
+        const bytes = new Uint8Array(16);
+        window.crypto.getRandomValues(bytes);
+        checkoutAttempt.current = { intent, key: Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('') };
+      }
+      checkoutInFlight.current = true;
       setSubmitting(true);
 
       const res = await API.post('/customer/checkout', payload, {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Idempotency-Key': checkoutAttempt.current.key
         }
       });
 
@@ -331,28 +353,9 @@ function CheckoutComponent() {
         return;
       }
 
-      const pricing = res.data.pricing || {
-        subtotal,
-        discount,
-        shippingFee,
-        total: finalTotal
-      };
-
-      const savedOrder =
-        res.data.order ||
-        res.data.result || {
-          orderId: 'HD' + Date.now(),
-          customerInfo: payload.customerInfo,
-          items: cart,
-          voucherCode: payload.voucherCode,
-          subtotal: pricing.subtotal,
-          discount: pricing.discount,
-          shippingFee: pricing.shippingFee,
-          total: pricing.total,
-          paymentStatus: payload.paymentStatus,
-          status: 'pending',
-          createdAt: new Date().toLocaleString('vi-VN')
-        };
+      const savedOrder = res.data.order || res.data.result;
+      if (!savedOrder?._id) throw new Error('Unconfirmed checkout response');
+      checkoutAttempt.current = null;
 
       localStorage.setItem('latestOrder', JSON.stringify(savedOrder));
       localStorage.removeItem('cart');
@@ -361,9 +364,7 @@ function CheckoutComponent() {
       alert('Đặt hàng thành công!');
       navigate('/order-success');
     } catch (error) {
-      console.error('CHECKOUT ERROR FULL:', error);
-      console.error('CHECKOUT STATUS:', error.response?.status);
-      console.error('CHECKOUT DATA:', error.response?.data);
+      // Preserve the attempt key on uncertain responses; never log request credentials.
 
       const handled = handleCustomerApiError(
         error,
@@ -378,6 +379,7 @@ function CheckoutComponent() {
 
       alert(message);
     } finally {
+      checkoutInFlight.current = false;
       setSubmitting(false);
     }
   };
@@ -433,8 +435,21 @@ function CheckoutComponent() {
               </div>
 
               <div className="checkout-form-group">
-                <label>Lời nhắn cho shop</label>
+                <h2>Thời gian &amp; lời nhắn</h2>
+                <label htmlFor="delivery-date">Ngày giao hoa</label>
+                <input id="delivery-date" name="deliveryDate" type="date" required min={vietnamToday()} value={formData.deliveryDate} onChange={handleChange} />
+                <label htmlFor="delivery-slot">Khung giờ giao mong muốn</label>
+                <select id="delivery-slot" name="deliveryTimeSlot" required value={formData.deliveryTimeSlot} onChange={handleChange} aria-describedby="delivery-slot-help">
+                  <option value="">Chọn khung giờ</option>
+                  {DELIVERY_TIME_SLOTS.map(slot => <option key={slot} value={slot}>{slot.replace('-', ' - ')}</option>)}
+                </select>
+                <p id="delivery-slot-help">Wind Flower sẽ cố gắng giao trong khung giờ bạn chọn.</p>
+                <label htmlFor="card-message">Lời nhắn thiệp (không bắt buộc)</label>
+                <textarea id="card-message" name="cardMessage" rows="3" maxLength={CARD_MESSAGE_LIMIT} value={formData.cardMessage} onChange={handleChange} placeholder="Chúc em sinh nhật vui vẻ!" aria-describedby="card-message-count" />
+                <p id="card-message-count">Nội dung gửi người nhận · {formData.cardMessage.length}/{CARD_MESSAGE_LIMIT} ký tự</p>
+                <label htmlFor="shop-note">Ghi chú cho shop</label>
                 <textarea
+                  id="shop-note"
                   name="note"
                   rows="3"
                   placeholder="Ví dụ: giao giờ hành chính, gọi trước khi giao..."
@@ -490,6 +505,9 @@ function CheckoutComponent() {
                   </div>
                 )}
 
+                {formData.paymentMethod !== 'cod' && (
+                  <p>Thanh toán mô phỏng - chưa xác minh. Xác nhận bên dưới không chứng minh giao dịch thật.</p>
+                )}
                 {formData.paymentMethod === 'bank' && (
                   <div className="payment-demo-box">
                     <p>
@@ -513,7 +531,7 @@ function CheckoutComponent() {
                       className="demo-paid-btn"
                       onClick={() => setIsPaidDemo(true)}
                     >
-                      Tôi đã thanh toán bằng chuyển khoản ngân hàng
+                      Xác nhận mô phỏng chuyển khoản - chưa xác minh
                     </button>
                   </div>
                 )}
@@ -540,7 +558,7 @@ function CheckoutComponent() {
                       className="demo-paid-btn"
                       onClick={() => setIsPaidDemo(true)}
                     >
-                      Tôi đã thanh toán momo
+                      Xác nhận mô phỏng MoMo - chưa xác minh
                     </button>
                   </div>
                 )}
@@ -562,6 +580,16 @@ function CheckoutComponent() {
 
           <div className="checkout-summary-box">
             <h2>Đơn hàng của bạn</h2>
+            <div className="checkout-delivery-summary">
+              <p><strong>Người nhận:</strong> {formData.fullName || '—'}</p>
+              <p><strong>Số điện thoại:</strong> {formData.phone || '—'}</p>
+              <p><strong>Địa chỉ:</strong> {formData.address || '—'}</p>
+              <p><strong>Ngày giao hoa:</strong> {formData.deliveryDate || '—'}</p>
+              <p><strong>Khung giờ giao mong muốn:</strong> {formData.deliveryTimeSlot || '—'}</p>
+              {formData.cardMessage.trim() && <p><strong>Lời nhắn thiệp:</strong> {formData.cardMessage.trim()}</p>}
+              {formData.note.trim() && <p><strong>Ghi chú cho shop:</strong> {formData.note.trim()}</p>}
+              <p><strong>Thanh toán:</strong> {{ cod: 'Thanh toán khi nhận hàng (COD)', bank: 'Chuyển khoản ngân hàng (demo)', momo: 'MoMo (demo)' }[formData.paymentMethod]}</p>
+            </div>
 
             {cart.map((item) => {
               const finalPrice = Number(item.price || 0);

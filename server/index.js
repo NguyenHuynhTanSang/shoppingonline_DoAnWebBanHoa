@@ -4,6 +4,9 @@ const path = require('path');
 const connectDB = require('./utils/MongooseUtil');
 
 const app = express();
+require('./utils/TrustedProxy').configureTrustedProxy(app);
+const server = require('http').createServer(app);
+require('./realtime/supportChat').attach(server);
 const PORT = process.env.PORT || 3000;
 
 // middlewares
@@ -23,6 +26,8 @@ app.get('/hello', (req, res) => {
 // apis
 app.use('/api/admin', require('./api/admin.js'));
 app.use('/api/customer', require('./api/customer.js'));
+app.use('/api/ai', require('./api/ai.js'));
+app.use('/api/support-chat', require('./api/supportChat'));
 
 // =========================
 // STATIC FILES
@@ -62,8 +67,9 @@ app.get('*', (req, res, next) => {
 
 // start server only after MongoDB connected
 connectDB()
-  .then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
+  .then(async () => {
+    await require('./models/Models').SupportMessage.init();
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`Server listening on ${PORT}`);
     });
   })

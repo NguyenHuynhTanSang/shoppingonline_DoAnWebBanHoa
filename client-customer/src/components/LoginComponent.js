@@ -1,114 +1,267 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+
 import API from '../services/api';
+
 import MenuComponent from './MenuComponent';
 import InformComponent from './InformComponent';
 
 function LoginComponent() {
   const [showPassword, setShowPassword] = useState(false);
+
   const [txtUsername, setTxtUsername] = useState('');
   const [txtPassword, setTxtPassword] = useState('');
+
   const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
     setMessage('');
 
-    if (!txtUsername || !txtPassword) {
-      setMessage('Vui lòng nhập đầy đủ thông tin');
+    const username = txtUsername.trim();
+
+    if (!username || !txtPassword) {
+      setMessage('Vui lòng nhập đầy đủ thông tin.');
       return;
     }
 
     try {
-      const res = await API.post('/customer/login', {
-        username: txtUsername,
-        password: txtPassword
-      });
+      setSubmitting(true);
+
+      const res = await API.post(
+        '/customer/login',
+        {
+          username,
+          password: txtPassword
+        }
+      );
 
       if (res.data.success === true) {
-        localStorage.setItem('customerToken', res.data.token);
-        localStorage.setItem('customer', JSON.stringify(res.data.customer || {}));
+        localStorage.setItem(
+          'customerToken',
+          res.data.token
+        );
+
+        localStorage.setItem(
+          'customer',
+          JSON.stringify(
+            res.data.customer || {}
+          )
+        );
+
         alert('Đăng nhập thành công');
+
         navigate('/');
+
         window.location.reload();
-      } else {
-        setMessage(res.data.message || 'Đăng nhập thất bại');
+
+        return;
       }
+
+      setMessage(
+        res.data.message ||
+        'Đăng nhập thất bại.'
+      );
     } catch (error) {
-      console.error(error);
+      console.error(
+        'LOGIN ERROR:',
+        error
+      );
+
       if (error.response) {
-        setMessage(error.response.data.message || 'Server error');
+        setMessage(
+          error.response.data?.message ||
+          'Máy chủ gặp lỗi, vui lòng thử lại.'
+        );
       } else {
-        setMessage('Không thể kết nối tới server');
+        setMessage(
+          'Không thể kết nối tới máy chủ.'
+        );
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div>
+    <div className="wf-auth-page-shell">
       <MenuComponent />
 
-      <div className="login-wrapper">
-        <div className="login-box login-box-modern">
-          <h1 className="login-title">LOGIN</h1>
+      <main className="wf-auth-page">
+        <section
+          className="wf-auth-card"
+          aria-labelledby="login-title"
+        >
+          <div className="wf-auth-heading">
+            <span className="wf-auth-eyebrow">
+              WIND FLOWER
+            </span>
 
-          <form className="login-form" onSubmit={handleLogin}>
-            <div className="login-group">
-              <label>Username or email address <span>*</span></label>
+            <h1 id="login-title">
+              Đăng nhập
+            </h1>
+
+            <p>
+              Đăng nhập để mua hoa,
+              theo dõi đơn hàng và sử dụng
+              các tiện ích dành cho khách hàng.
+            </p>
+          </div>
+
+          <form
+            className="wf-auth-form"
+            onSubmit={handleLogin}
+          >
+            <div className="wf-auth-field">
+              <label htmlFor="login-username">
+                Tên đăng nhập hoặc email
+                <span aria-hidden="true">
+                  *
+                </span>
+              </label>
+
               <input
+                id="login-username"
+                name="username"
                 type="text"
                 placeholder="Nhập tên đăng nhập hoặc email"
                 value={txtUsername}
-                onChange={(e) => setTxtUsername(e.target.value)}
+                onChange={(event) =>
+                  setTxtUsername(
+                    event.target.value
+                  )
+                }
+                autoComplete="username"
+                disabled={submitting}
               />
             </div>
 
-            <div className="login-group">
-              <label>Mật khẩu <span>*</span></label>
+            <div className="wf-auth-field">
+              <label htmlFor="login-password">
+                Mật khẩu
+                <span aria-hidden="true">
+                  *
+                </span>
+              </label>
 
-              <div className="password-box">
+              <div className="wf-auth-password">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  id="login-password"
+                  name="password"
+                  type={
+                    showPassword
+                      ? 'text'
+                      : 'password'
+                  }
                   placeholder="Nhập mật khẩu"
                   value={txtPassword}
-                  onChange={(e) => setTxtPassword(e.target.value)}
+                  onChange={(event) =>
+                    setTxtPassword(
+                      event.target.value
+                    )
+                  }
+                  autoComplete="current-password"
+                  disabled={submitting}
                 />
+
                 <button
                   type="button"
-                  className="toggle-password-btn"
-                  onClick={() => setShowPassword(!showPassword)}
+                  className="wf-auth-password-toggle"
+                  aria-label={
+                    showPassword
+                      ? 'Ẩn mật khẩu'
+                      : 'Hiện mật khẩu'
+                  }
+                  title={
+                    showPassword
+                      ? 'Ẩn mật khẩu'
+                      : 'Hiện mật khẩu'
+                  }
+                  onClick={() =>
+                    setShowPassword(
+                      (previous) =>
+                        !previous
+                    )
+                  }
+                  disabled={submitting}
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showPassword
+                    ? <FaEyeSlash />
+                    : <FaEye />}
                 </button>
               </div>
             </div>
 
-            {message && <p className="form-message">{message}</p>}
+            {message && (
+              <div
+                className="wf-auth-message wf-auth-message-error"
+                role="alert"
+              >
+                {message}
+              </div>
+            )}
 
-            <button type="submit" className="login-submit-btn">
-              ĐĂNG NHẬP
+            <button
+              type="submit"
+              className="wf-auth-submit"
+              disabled={submitting}
+            >
+              {submitting
+                ? 'Đang đăng nhập...'
+                : 'Đăng nhập'}
             </button>
           </form>
 
-          <div className="login-extra-row">
-            <label className="remember-me">
-              <input type="checkbox" />
-              <span>Nhớ tôi</span>
+          <div className="wf-auth-options">
+            <label className="wf-auth-remember">
+              <input
+                type="checkbox"
+                disabled={submitting}
+              />
+
+              <span>
+                Nhớ tôi
+              </span>
             </label>
 
-            <Link to="/forgot-password" className="forgot-link">
+            <Link
+              to="/forgot-password"
+              className="wf-auth-link"
+            >
               Quên mật khẩu?
             </Link>
           </div>
 
-          <div className="register-line">
-            <span>Bạn chưa có tài khoản?</span>
-            <Link to="/register"> Đăng ký ngay</Link>
+          <div className="wf-auth-divider">
+            <span>
+              Chưa có tài khoản?
+            </span>
           </div>
-        </div>
-      </div>
+
+          <div className="wf-auth-register">
+            <p>
+              Tạo tài khoản để lưu thông tin
+              mua hàng và theo dõi đơn dễ dàng hơn.
+            </p>
+
+            <Link
+              to="/register"
+              className="wf-auth-secondary-button"
+            >
+              Đăng ký tài khoản
+            </Link>
+          </div>
+        </section>
+      </main>
 
       <InformComponent />
     </div>

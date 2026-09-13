@@ -1,0 +1,622 @@
+/* =====================================================
+   WIND FLOWER - AI CHAT
+===================================================== */
+
+.wf-ai-space {
+  height:
+    calc(
+      88px +
+      env(
+        safe-area-inset-bottom,
+        0px
+      )
+    );
+}
+
+/* =====================================================
+   LAUNCHER
+===================================================== */
+
+.wf-ai-launcher {
+  position: fixed;
+
+  right: 20px;
+
+  bottom:
+    calc(
+      16px +
+      env(
+        safe-area-inset-bottom,
+        0px
+      )
+    );
+
+  z-index: 1000;
+
+  border: 0;
+  border-radius: 28px;
+
+  padding: 14px 20px;
+
+  background: #a00044;
+
+  color: #ffffff;
+
+  box-shadow:
+    0 4px 18px
+    rgba(0, 0, 0, 0.2);
+
+  cursor: pointer;
+
+  font: inherit;
+  font-weight: 600;
+}
+
+/* =====================================================
+   PANEL
+===================================================== */
+
+.wf-ai-panel {
+  position: fixed;
+
+  right: 20px;
+
+  bottom:
+    calc(
+      80px +
+      env(
+        safe-area-inset-bottom,
+        0px
+      )
+    );
+
+  z-index: 1001;
+
+  width:
+    min(
+      380px,
+      calc(100vw - 24px)
+    );
+
+  height: 520px;
+
+  max-height:
+    calc(
+      100dvh -
+      104px -
+      env(
+        safe-area-inset-bottom,
+        0px
+      )
+    );
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  border:
+    1px solid #f6d2df;
+
+  border-radius: 16px;
+
+  background: #ffffff;
+
+  color: #24212a;
+
+  box-shadow:
+    0 8px 32px
+    rgba(0, 0, 0, 0.2);
+
+  font-size: 14px;
+}
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.wf-ai-header {
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 7px 10px 7px 16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #a00044,
+      #c80056
+    );
+
+  color: #ffffff;
+}
+
+.wf-ai-header strong {
+  flex: 1;
+
+  min-width: 0;
+
+  font-size: 15px;
+}
+
+.wf-ai-header button {
+  border: 0;
+
+  background: transparent;
+
+  color: #ffffff;
+
+  cursor: pointer;
+}
+
+.wf-ai-header
+.wf-ai-new-chat-button {
+  width: auto;
+  height: 36px;
+
+  padding: 0 8px;
+
+  border-radius: 8px;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.wf-ai-header
+.wf-ai-new-chat-button:hover {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.12
+    );
+}
+
+.wf-ai-header
+.wf-ai-new-chat-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wf-ai-header
+.wf-ai-close-button {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  font-size: 25px;
+  line-height: 1;
+}
+
+.wf-ai-header
+.wf-ai-close-button:hover {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.12
+    );
+}
+
+/* =====================================================
+   MESSAGE LOG
+===================================================== */
+
+.wf-ai-log {
+  flex: 1;
+
+  min-height: 0;
+
+  overflow-y: auto;
+
+  overscroll-behavior:
+    contain;
+
+  padding: 14px;
+
+  background: #ffffff;
+}
+
+.wf-ai-intro {
+  margin: 4px 0 14px;
+
+  color: #655963;
+
+  line-height: 1.5;
+}
+
+.wf-ai-status {
+  margin: 10px 0;
+
+  color: #655963;
+
+  font-size: 13px;
+}
+
+.wf-ai-message {
+  margin: 12px 0;
+
+  padding: 10px 12px;
+
+  border-radius: 12px;
+
+  background: #f5f5f8;
+
+  overflow-wrap: anywhere;
+}
+
+.wf-ai-message p {
+  margin: 6px 0;
+
+  white-space: pre-wrap;
+
+  line-height: 1.5;
+}
+
+.wf-ai-customer {
+  margin-left: 28px;
+
+  background: #ffe3ef;
+}
+
+.wf-ai-assistant {
+  margin-right: 12px;
+}
+
+.wf-ai-system {
+  background: #fff7da;
+
+  color: #5d4d18;
+}
+
+.wf-ai-author {
+  display: block;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =====================================================
+   PRODUCT CARD INSIDE AI
+===================================================== */
+
+.wf-ai-product {
+  display: flex;
+
+  gap: 10px;
+
+  padding: 10px 0;
+
+  border-top:
+    1px solid #dddddd;
+}
+
+.wf-ai-product img {
+  width: 64px;
+  height: 72px;
+
+  flex-shrink: 0;
+
+  object-fit: cover;
+
+  border-radius: 6px;
+}
+
+.wf-ai-product-info {
+  flex: 1;
+
+  min-width: 0;
+}
+
+.wf-ai-product-info strong {
+  display: block;
+
+  overflow-wrap: anywhere;
+
+  line-height: 1.4;
+}
+
+.wf-ai-product-info p {
+  margin: 5px 0;
+}
+
+.wf-ai-product a {
+  display: inline-block;
+
+  padding: 6px 0;
+
+  color: #a00044;
+
+  text-decoration: underline;
+}
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+.wf-ai-error {
+  margin: 10px 0;
+
+  padding: 9px 10px;
+
+  border-radius: 8px;
+
+  background: #fff0f2;
+
+  color: #a0182c;
+
+  font-size: 13px;
+}
+
+/* =====================================================
+   MESSAGE FORM
+===================================================== */
+
+.wf-ai-form {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 12px;
+
+  border-top:
+    1px solid #eeeeee;
+
+  background: #ffffff;
+}
+
+.wf-ai-form input {
+  flex: 1;
+
+  min-width: 0;
+
+  min-height: 42px;
+
+  border:
+    1px solid #a99ba2;
+
+  border-radius: 8px;
+
+  padding: 10px;
+
+  outline: none;
+
+  font-size: 16px;
+}
+
+.wf-ai-form input:focus {
+  border-color: #c80056;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      200,
+      0,
+      86,
+      0.1
+    );
+}
+
+.wf-ai-form button {
+  min-height: 42px;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  padding: 10px 14px;
+
+  background: #a00044;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+.wf-ai-form button:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+.wf-ai-form
+.wf-ai-stop-support-button {
+  position: absolute;
+
+  right: 12px;
+  bottom: 62px;
+
+  min-height: 32px;
+
+  padding: 6px 10px;
+
+  font-size: 11px;
+}
+
+/* =====================================================
+   ACCESSIBILITY
+===================================================== */
+
+.wf-ai-label {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  overflow: hidden;
+
+  clip-path: inset(50%);
+}
+
+.wf-ai-space
+button:focus-visible,
+.wf-ai-space
+a:focus-visible,
+.wf-ai-space
+input:focus-visible {
+  outline:
+    3px solid #e978a9;
+
+  outline-offset: 2px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 480px) {
+  .wf-ai-space {
+    height:
+      calc(
+        72px +
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
+  }
+
+  .wf-ai-launcher {
+    right: 12px;
+
+    bottom:
+      calc(
+        12px +
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
+
+    padding: 11px 16px;
+
+    font-size: 12px;
+  }
+
+  .wf-ai-panel {
+    right: 10px;
+
+    bottom:
+      calc(
+        66px +
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
+
+    width:
+      calc(
+        100vw -
+        20px
+      );
+
+    height:
+      min(
+        560px,
+        calc(
+          100dvh -
+          90px
+        )
+      );
+
+    max-height:
+      calc(
+        100dvh -
+        90px -
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
+
+    border-radius: 14px;
+  }
+
+  .wf-ai-header {
+    min-height: 52px;
+
+    padding:
+      6px 7px 6px 12px;
+  }
+
+  .wf-ai-header strong {
+    font-size: 13px;
+  }
+
+  .wf-ai-header
+  .wf-ai-new-chat-button {
+    height: 34px;
+
+    font-size: 10px;
+  }
+
+  .wf-ai-header
+  .wf-ai-close-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .wf-ai-log {
+    padding: 11px;
+  }
+
+  .wf-ai-message {
+    margin: 9px 0;
+
+    padding: 9px 10px;
+  }
+
+  .wf-ai-customer {
+    margin-left: 20px;
+  }
+
+  .wf-ai-assistant {
+    margin-right: 6px;
+  }
+
+  .wf-ai-product img {
+    width: 58px;
+    height: 66px;
+  }
+
+  .wf-ai-form {
+    padding: 9px;
+
+    gap: 6px;
+  }
+
+  .wf-ai-form input {
+    min-height: 40px;
+
+    font-size: 16px;
+  }
+
+  .wf-ai-form button {
+    min-height: 40px;
+
+    padding:
+      8px 11px;
+  }
+}

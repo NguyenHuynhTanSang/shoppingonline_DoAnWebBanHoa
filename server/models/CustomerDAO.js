@@ -3,6 +3,16 @@ const mongoose = require('mongoose');
 const Models = require('./Models');
 
 const CustomerDAO = {
+  async migrateLegacyPasswordIfUnchanged(_id, expectedStoredPassword, newHash) {
+    return Models.Customer.findOneAndUpdate(
+      { _id, password: expectedStoredPassword, active: { $nin: [0, -1] } },
+      { $set: { password: newHash } },
+      { new: true }
+    ).exec();
+  },
+  async selectByUsername(username) {
+    return Models.Customer.findOne({ username }).exec();
+  },
   async selectByUsernameOrEmail(username, email) {
     const query = { $or: [{ username }, { email }] };
     return Models.Customer.findOne(query).exec();
@@ -24,15 +34,17 @@ const CustomerDAO = {
     return Models.Customer.findOne(query).exec();
   },
 
-  async update(customer) {
+  async update(customer, passwordChanged = false) {
     const newvalues = {
       username: customer.username,
-      password: customer.password,
       name: customer.name,
       phone: customer.phone,
       email: customer.email
     };
-    return Models.Customer.findByIdAndUpdate(customer._id, newvalues, { new: true }).exec();
+    if (passwordChanged) newvalues.password = customer.password;
+    return Models.Customer.findByIdAndUpdate(customer._id, {
+      $set: newvalues, ...(passwordChanged ? { $inc: { tokenVersion: 1 } } : {})
+    }, { new: true }).exec();
   },
 
   async selectAll() {
@@ -71,9 +83,12 @@ async resetPasswordByToken(token, newPassword) {
       resetPasswordExpire: { $gt: Date.now() }
     },
     {
-      password: newPassword,
-      resetPasswordToken: '',
-      resetPasswordExpire: 0
+      $set: {
+        password: newPassword,
+        resetPasswordToken: '',
+        resetPasswordExpire: 0
+      },
+      $inc: { tokenVersion: 1 }
     },
     { new: true }
   ).exec();

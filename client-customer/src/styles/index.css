@@ -1,0 +1,33 @@
+/* =====================================================
+   WIND FLOWER - GLOBAL STYLE ENTRY POINT
+===================================================== */
+
+/* Core */
+@import './base.css';
+@import './layout.css';
+
+/* Components */
+@import './components/menu.css';
+@import './components/ai-chat.css';
+@import './components/footer.css';
+@import './components/product-card.css';
+@import './components/price-filter.css';
+
+/* Pages */
+@import './pages/home.css';
+@import './pages/category.css';
+@import './pages/search.css';
+@import './pages/product-detail.css';
+@import './pages/cart.css';
+@import './pages/checkout.css';
+@import './pages/auth.css';
+@import './pages/orders.css';
+@import './pages/order-success.css';
+@import './pages/guide.css';
+
+/*
+  Shared by:
+  - ShippingPolicyComponent
+  - ReturnPolicyComponent
+*/
+@import './pages/shipping-policy.css';

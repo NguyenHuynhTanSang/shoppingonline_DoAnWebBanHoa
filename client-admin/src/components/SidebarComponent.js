@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-function SidebarComponent() {
+function SidebarComponent({ pendingSupport }) {
   const location = useLocation();
 
   let user = null;
@@ -28,6 +28,9 @@ function SidebarComponent() {
 
       {canUseOperationalMenus && (
         <>
+          <Link to="/support-requests" className={isActive('/support-requests')}>AI &amp; Hỗ trợ
+            {pendingSupport > 0 && <span aria-label={`${pendingSupport} yêu cầu đang chờ`} style={{ marginLeft: 8, padding: '2px 7px', borderRadius: 12, background: '#b42318', color: '#fff', fontSize: 12 }}>{pendingSupport}</span>}
+          </Link>
           <Link to="/dashboard" className={isActive('/dashboard')}>
             Dashboard
           </Link>

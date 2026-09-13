@@ -20,8 +20,30 @@ const JwtUtil = {
   },
 
   extractToken,
+  verifyToken(token) {
+    return jwt.verify(token, MyConstants.JWT_SECRET);
+  },
 
-  checkToken(req, res, next) {
+  isCurrentSession(decoded, account) {
+    const expected = decoded?.tokenVersion ?? 0;
+    const current = account?.tokenVersion ?? 0;
+    return !!account && Number.isSafeInteger(expected) && expected >= 0 &&
+      Number.isSafeInteger(current) && current >= 0 && expected === current;
+  },
+
+  async verifySession(token) {
+    const decoded = JwtUtil.verifyToken(token);
+    const Models = require('../models/Models');
+    const model = { admin: Models.Admin, staff: Models.Staff, customer: Models.Customer }[decoded.role];
+    if (!model || typeof decoded.sub !== 'string' || !/^[a-f\d]{24}$/i.test(decoded.sub)) throw Error('Invalid session');
+    const account = await model.findById(decoded.sub).select('_id active tokenVersion').lean().exec();
+    if (!JwtUtil.isCurrentSession(decoded, account) ||
+      (decoded.role === 'staff' && Number(account.active) !== 1) ||
+      (decoded.role === 'customer' && [0, -1].includes(Number(account.active)))) throw Error('Invalid session');
+    return decoded;
+  },
+
+  async checkToken(req, res, next) {
     const token = extractToken(req);
 
     if (!token) {
@@ -31,24 +53,12 @@ const JwtUtil = {
       });
     }
 
-    jwt.verify(token, MyConstants.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        if (err.name === 'TokenExpiredError') {
-          return res.status(401).json({
-            success: false,
-            message: 'Token has expired'
-          });
-        }
-
-        return res.status(401).json({
-          success: false,
-          message: 'Token is not valid'
-        });
-      }
-
-      req.decoded = decoded;
-      next();
-    });
+    try {
+      req.decoded = await JwtUtil.verifySession(token);
+    } catch {
+      return res.status(401).json({ success: false, message: 'Token is not valid' });
+    }
+    return next();
   },
 
   requireRoles(roles = []) {

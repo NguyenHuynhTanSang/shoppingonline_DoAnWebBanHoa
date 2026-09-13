@@ -25,20 +25,14 @@ function PaymentPolicyComponent() {
             người đặt, tùy theo thông tin đơn hàng đã xác nhận.
           </p>
 
-          <h3 style={{ marginTop: '24px' }}>3. Thanh toán chuyển khoản</h3>
+          <h3 style={{ marginTop: '24px' }}>3. Chuyển khoản ngân hàng và MoMo (demo)</h3>
           <p>
-            Quý khách có thể chuyển khoản trước theo thông tin tài khoản mà cửa hàng cung cấp.
+            Chuyển khoản ngân hàng và MoMo tại checkout hiện chỉ là demo,
+            chưa phải luồng thanh toán hoặc hoàn tiền trực tuyến thực tế.
           </p>
 
-          <ul style={{ lineHeight: '2', marginTop: '10px' }}>
-            <li>Ngân hàng: Vietcombank</li>
-            <li>Chủ tài khoản: WIND FLOWER SHOP</li>
-            <li>Số tài khoản: 0123456789</li>
-            <li>Nội dung chuyển khoản: Tên hoặc số điện thoại người đặt</li>
-          </ul>
-
           <p style={{ marginTop: '18px' }}>
-            Sau khi chuyển khoản, vui lòng liên hệ hotline để cửa hàng xác nhận nhanh hơn.
+            Nếu có vấn đề về thanh toán, vui lòng liên hệ Wind Flower để nhân viên kiểm tra.
           </p>
         </div>
       </div>

@@ -1,11 +1,18 @@
+const CheckoutIdempotency = require('../services/CheckoutIdempotencyService');
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 
 // utils
 const JwtUtil = require('../utils/JwtUtil');
+const PasswordService = require('../services/PasswordService');
+const AuthRateLimit = require('../utils/AuthRateLimit');
+const OrderLifecycle = require('../services/OrderLifecycleService');
+const PaymentPolicy = require('../utils/PaymentPolicy');
 const EmailUtil = require('../utils/EmailUtil');
 const MyConstants = require('../utils/MyConstants');
+const { validateDelivery } = require('../utils/DeliveryValidation');
+const { calculateShippingFee } = require('../utils/ShippingRules');
 
 // daos
 const CategoryDAO = require('../models/CategoryDAO');
@@ -64,6 +71,7 @@ function sanitizeCustomer(customerDoc) {
   const customer = toPlainObject(customerDoc);
   if (!customer) return null;
 
+  delete customer.tokenVersion;
   delete customer.password;
   delete customer.token;
   delete customer.resetPasswordToken;
@@ -196,20 +204,16 @@ function enrichProducts(products) {
     .filter(Boolean);
 }
 
-function calculateShippingFee(subtotal) {
-  const safeSubtotal = Math.max(0, Number(subtotal || 0));
-  return safeSubtotal >= 1500000 ? 0 : 30000;
-}
 
-async function loadProductById(productId) {
+async function loadProductById(productId, session) {
   let product = null;
 
   if (typeof ProductDAO.selectByID === 'function') {
-    product = await ProductDAO.selectByID(productId);
+    product = await ProductDAO.selectByID(productId, session);
   }
 
   if (!product) {
-    product = await Models.Product.findById(productId).exec();
+    product = await Models.Product.findById(productId).session(session || null).exec();
   }
 
   return product;
@@ -269,7 +273,7 @@ function calculateDiscountFromVoucher(voucherDoc, subtotal) {
   return Math.max(0, Math.min(Math.floor(discount), safeSubtotal));
 }
 
-async function validateVoucherForSubtotal(voucherCode, subtotal) {
+async function validateVoucherForSubtotal(voucherCode, subtotal, session) {
   const code = normalizeVoucherCode(voucherCode);
   const safeSubtotal = Math.max(0, Number(subtotal || 0));
 
@@ -285,7 +289,7 @@ async function validateVoucherForSubtotal(voucherCode, subtotal) {
     };
   }
 
-  const voucher = await Models.Voucher.findOne({ code }).exec();
+  const voucher = await Models.Voucher.findOne({ code }).session(session || null).exec();
 
   if (!voucher) {
     return {
@@ -300,6 +304,16 @@ async function validateVoucherForSubtotal(voucherCode, subtotal) {
   const minOrderValue = toNumber(voucher.minOrderValue, 0);
   const usageLimit = toNumber(voucher.usageLimit, 0);
   const usedCount = toNumber(voucher.usedCount, 0);
+
+  if (session && (
+    !['fixed', 'percent'].includes(String(voucher.type).toLowerCase()) ||
+    !['value', 'minOrderValue', 'maxDiscount'].every(field => Number.isFinite(Number(voucher[field] ?? 0)) && Number(voucher[field] ?? 0) >= 0) ||
+    !['startDate', 'endDate'].every(field => Number.isFinite(Number(voucher[field] ?? 0)))
+  )) return { success: false, message: 'Dữ liệu voucher không hợp lệ' };
+  if (session && (
+    !Number.isSafeInteger(voucher.usageLimit ?? 0) || (voucher.usageLimit ?? 0) < 0 ||
+    !Number.isSafeInteger(voucher.usedCount === undefined ? 0 : voucher.usedCount) || usedCount < 0 || usedCount >= Number.MAX_SAFE_INTEGER
+  )) return { success: false, code: 'VOUCHER_USAGE_CONFLICT', message: 'Dữ liệu lượt dùng voucher không hợp lệ' };
 
   if (!voucher.isActive) {
     return {
@@ -332,6 +346,7 @@ async function validateVoucherForSubtotal(voucherCode, subtotal) {
   if (usageLimit > 0 && usedCount >= usageLimit) {
     return {
       success: false,
+      code: 'VOUCHER_USAGE_CONFLICT',
       message: 'Voucher đã hết lượt sử dụng'
     };
   }
@@ -370,7 +385,7 @@ async function buildOrderItemsFromRawItems(rawItems = [], options = {}) {
 
     if (!productId || quantity <= 0) continue;
 
-    const productDoc = await loadProductById(productId);
+    const productDoc = await loadProductById(productId, options.session);
 
     if (!productDoc) {
       return {
@@ -390,6 +405,10 @@ async function buildOrderItemsFromRawItems(rawItems = [], options = {}) {
     }
 
     const pricing = getPricingInfo(product);
+    if (options.session && ![Number(product.price ?? 0), pricing.originalPrice, pricing.finalPrice, subtotal + pricing.finalPrice * quantity]
+      .every(value => Number.isFinite(value) && value >= 0)) {
+      throw new OrderLifecycle.OrderError(400, 'INVALID_AMOUNTS', 'Giá trị tiền trong đơn hàng không hợp lệ');
+    }
 
     const orderProductSnapshot = {
       ...product,
@@ -900,7 +919,7 @@ router.post('/signup', async function (req, res) {
   try {
     const body = req.body || {};
     const username = String(body.username || '').trim();
-    const password = String(body.password || '').trim();
+    const password = typeof body.password === 'string' ? body.password.trim() : body.password;
     const name = String(body.name || '').trim();
     const phone = String(body.phone || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
@@ -922,7 +941,7 @@ router.post('/signup', async function (req, res) {
 
     const newCust = {
       username,
-      password,
+      password: await PasswordService.hashPassword(password),
       name,
       phone: phone || '',
       email,
@@ -938,15 +957,18 @@ router.post('/signup', async function (req, res) {
       customer: sanitizeCustomer(result)
     });
   } catch (err) {
-    console.error(err);
+    if (err instanceof TypeError || err instanceof RangeError) {
+      return res.status(400).json({ success: false, message: 'Password must be a string of at least 6 characters and at most 72 UTF-8 bytes' });
+    }
+    console.error('Password write failed');
     res.status(500).json({
       success: false,
-      message: err.message || 'Server error'
+      message: 'Server error'
     });
   }
 });
 
-router.post('/login', async function (req, res) {
+router.post('/login', AuthRateLimit.login, async function (req, res) {
   try {
     const body = req.body || {};
     const usernameOrEmail = String(body.username || body.email || '').trim();
@@ -962,18 +984,12 @@ router.post('/login', async function (req, res) {
     let customer = null;
 
     if (usernameOrEmail.includes('@')) {
-      customer = await Models.Customer.findOne({
-        email: usernameOrEmail.toLowerCase(),
-        password: password
-      }).exec();
+      customer = await CustomerDAO.selectByEmail(usernameOrEmail.toLowerCase());
     } else {
-      customer = await CustomerDAO.selectByUsernameAndPassword(
-        usernameOrEmail,
-        password
-      );
+      customer = await CustomerDAO.selectByUsername(usernameOrEmail);
     }
 
-    if (!customer) {
+    if (!customer || !await PasswordService.verifyLoginPassword(password, customer.password)) {
       return res.json({
         success: false,
         message: 'Sai tên đăng nhập/email hoặc mật khẩu'
@@ -994,8 +1010,15 @@ router.post('/login', async function (req, res) {
       });
     }
 
+    customer = await PasswordService.migrateLegacyLogin(
+      customer, password, CustomerDAO,
+      account => ![0, -1].includes(Number(account.active))
+    );
+    if (!customer) return res.json({ success: false, message: 'Sai tên đăng nhập/email hoặc mật khẩu' });
+
     const token = JwtUtil.genToken({
       sub: String(customer._id),
+        tokenVersion: customer.tokenVersion ?? 0,
       username: customer.username,
       role: 'customer'
     });
@@ -1007,10 +1030,10 @@ router.post('/login', async function (req, res) {
       customer: sanitizeCustomer(customer)
     });
   } catch (err) {
-    console.error(err);
+    console.error('Customer login failed');
     res.status(500).json({
       success: false,
-      message: err.message || 'Server error'
+      message: 'Server error'
     });
   }
 });
@@ -1035,7 +1058,7 @@ router.get(
   }
 );
 
-router.post('/forgot-password', async function (req, res) {
+router.post('/forgot-password', AuthRateLimit.forgot, async function (req, res) {
   const response = {
     success: true,
     message: 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu qua email.'
@@ -1092,7 +1115,7 @@ router.post('/forgot-password', async function (req, res) {
   }
 });
 
-router.post('/reset-password', async function (req, res) {
+router.post('/reset-password', AuthRateLimit.reset, async function (req, res) {
   try {
     const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
     const password = typeof req.body?.password === 'string' ? req.body.password.trim() : '';
@@ -1113,7 +1136,10 @@ router.post('/reset-password', async function (req, res) {
       });
     }
 
-    const updated = await CustomerDAO.resetPasswordByToken(token, password);
+    const newHash = await PasswordService.hashPassword(password);
+    // Explicit reset always replaces the credential and revokes prior sessions,
+    // even for the same logical password. Never reuse the read snapshot here.
+    const updated = await CustomerDAO.resetPasswordByToken(token, newHash);
     if (!updated) {
       return res.status(400).json({
         success: false,
@@ -1126,6 +1152,9 @@ router.post('/reset-password', async function (req, res) {
       message: 'Đặt lại mật khẩu thành công'
     });
   } catch (err) {
+    if (err instanceof TypeError || err instanceof RangeError) {
+      return res.status(400).json({ success: false, message: 'Password must be a string of at least 6 characters and at most 72 UTF-8 bytes' });
+    }
     console.error('Password reset failed');
     return res.status(500).json({
       success: false,
@@ -1174,11 +1203,18 @@ router.put('/profile', JwtUtil.checkToken, requireActiveCustomer, async function
     current.email = newEmail;
     current.username = newUsername;
 
-    if (body.password && String(body.password).trim() !== '') {
-      current.password = String(body.password).trim();
+    let passwordChanged = false;
+    if (body.password !== undefined && body.password !== '') {
+      if (typeof body.password !== 'string') throw new TypeError('Invalid password');
+      if (body.password.trim()) {
+        const hash = await PasswordService.hashPassword(body.password.trim());
+        passwordChanged = !await PasswordService.verifyLoginPassword(body.password.trim(), current.password);
+        if (passwordChanged) current.password = hash;
+      }
     }
 
-    const updated = await CustomerDAO.update(current);
+    const updated = await CustomerDAO.update(current, passwordChanged);
+    if (!updated) return res.status(404).json({ success: false, message: 'Account not found' });
 
     res.json({
       success: true,
@@ -1186,10 +1222,13 @@ router.put('/profile', JwtUtil.checkToken, requireActiveCustomer, async function
       customer: sanitizeCustomer(updated)
     });
   } catch (err) {
-    console.error(err);
+    if (err instanceof TypeError || err instanceof RangeError) {
+      return res.status(400).json({ success: false, message: 'Password must be a string of at least 6 characters and at most 72 UTF-8 bytes' });
+    }
+    console.error('Password write failed');
     res.status(500).json({
       success: false,
-      message: err.message || 'Server error'
+      message: 'Server error'
     });
   }
 });
@@ -1198,6 +1237,7 @@ router.put('/profile', JwtUtil.checkToken, requireActiveCustomer, async function
 // checkout + orders
 // =========================
 router.post('/checkout', JwtUtil.checkToken, requireActiveCustomer, async function (req, res) {
+  let attempt;
   try {
     const dbCustomer = req.dbCustomer;
 
@@ -1209,6 +1249,16 @@ router.post('/checkout', JwtUtil.checkToken, requireActiveCustomer, async functi
     }
 
     const body = req.body || {};
+    attempt = CheckoutIdempotency.prepare(req.get('Idempotency-Key'), body, dbCustomer._id);
+    await CheckoutIdempotency.assertReady();
+    const existing = await CheckoutIdempotency.find(attempt);
+    if (existing) return res.json(CheckoutIdempotency.response(existing));
+    const delivery = validateDelivery(body);
+    if (delivery.message) return res.status(400).json({ success: false, message: delivery.message });
+    const paymentMethod = body.customerInfo?.paymentMethod ?? 'cod';
+    if (!PaymentPolicy.isPaymentMethod(paymentMethod)) {
+      return res.status(400).json({ success: false, message: 'Phương thức thanh toán không hợp lệ.' });
+    }
     const rawItems = Array.isArray(body.items) ? body.items : [];
 
     if (rawItems.length === 0) {
@@ -1218,101 +1268,99 @@ router.post('/checkout', JwtUtil.checkToken, requireActiveCustomer, async functi
       });
     }
 
-    const buildResult = await buildOrderItemsFromRawItems(rawItems, { checkStock: true });
-
-    if (!buildResult.success) {
-      return res.status(400).json({
-        success: false,
-        message: buildResult.message
-      });
+    if (rawItems.some(item => !Number.isSafeInteger(item?.quantity) || item.quantity <= 0)) {
+      throw new OrderLifecycle.OrderError(400, 'INVALID_QUANTITY', 'Invalid item quantity');
     }
+    let voucherWasValidated = false;
+    const { result } = await OrderLifecycle.transaction(async session => {
+      const existing = await CheckoutIdempotency.find(attempt, session);
+      if (existing) return { result: existing };
+      const buildResult = await buildOrderItemsFromRawItems(rawItems, { session });
 
-    const orderItems = buildResult.orderItems;
-    const subtotal = buildResult.subtotal;
-
-    const voucherCode = normalizeVoucherCode(body.voucherCode || '');
-    let voucherResult = {
-      success: true,
-      voucher: null,
-      voucherInfo: null,
-      voucherCode: '',
-      discount: 0,
-      totalAfterDiscount: subtotal
-    };
-
-    if (voucherCode) {
-      voucherResult = await validateVoucherForSubtotal(voucherCode, subtotal);
-
-      if (!voucherResult.success) {
-        return res.status(400).json({
-          success: false,
-          message: voucherResult.message
-        });
+      if (!buildResult.success) {
+        throw new OrderLifecycle.OrderError(400, 'INVALID_ITEMS', buildResult.message);
       }
-    }
 
-    const discount = voucherResult.discount || 0;
-    const shippingFee = calculateShippingFee(subtotal);
-    const total = Math.max(subtotal - discount + shippingFee, 0);
+      const orderItems = buildResult.orderItems;
+      const subtotal = buildResult.subtotal;
 
-    const customerInfo = {
-      ...(body.customerInfo || {}),
-      fullName:
-        String(body.customerInfo?.fullName || '').trim() ||
-        String(dbCustomer.name || '').trim(),
-      phone:
-        String(body.customerInfo?.phone || '').trim() ||
-        String(dbCustomer.phone || '').trim(),
-      email:
-        String(body.customerInfo?.email || '').trim().toLowerCase() ||
-        String(dbCustomer.email || '').trim().toLowerCase(),
-      address: String(body.customerInfo?.address || '').trim(),
-      note: String(body.customerInfo?.note || '').trim(),
-      paymentMethod: body.customerInfo?.paymentMethod || 'cod'
-    };
+      const voucherCode = normalizeVoucherCode(body.voucherCode || '');
+      let voucherResult = {
+        success: true,
+        voucher: null,
+        voucherInfo: null,
+        voucherCode: '',
+        discount: 0,
+        totalAfterDiscount: subtotal
+      };
 
-    const order = {
-      cdate: Date.now(),
-      total: total,
-      status: 'pending',
-      customer: sanitizeCustomerForOrder(dbCustomer),
-      items: orderItems,
-      customerInfo: customerInfo,
-      paymentStatus: body.paymentStatus || 'Chờ thanh toán khi nhận hàng',
-      voucherCode: voucherResult.voucherCode || '',
-      subtotal: subtotal,
-      discount: discount,
-      shippingFee: shippingFee
-    };
+      if (voucherCode) {
+        voucherResult = await validateVoucherForSubtotal(voucherCode, subtotal, session);
 
-    const result = await OrderDAO.insert(order);
-
-    if (voucherResult.voucher) {
-      await Models.Voucher.findByIdAndUpdate(voucherResult.voucher._id, {
-        $inc: { usedCount: 1 },
-        $set: { udate: Date.now() }
-      }).exec();
-    }
-
-    return res.json({
-      success: true,
-      message: 'Đặt hàng thành công',
-      order: result,
-      pricing: {
-        subtotal,
-        discount,
-        shippingFee,
-        total
+        if (!voucherResult.success) {
+          if (voucherWasValidated || voucherResult.code === 'VOUCHER_USAGE_CONFLICT') {
+            throw new OrderLifecycle.OrderError(409, 'VOUCHER_USAGE_CONFLICT', voucherResult.message);
+          }
+          throw new OrderLifecycle.OrderError(400, 'INVALID_VOUCHER', voucherResult.message);
+        }
+        voucherWasValidated = true;
       }
+
+      const discount = voucherResult.discount || 0;
+      const shippingFee = calculateShippingFee(subtotal);
+      const total = Math.max(subtotal - discount + shippingFee, 0);
+      if (![subtotal, discount, shippingFee, total].every(value => Number.isFinite(value) && value >= 0)) {
+        throw new OrderLifecycle.OrderError(400, 'INVALID_AMOUNTS', 'Giá trị tiền trong đơn hàng không hợp lệ');
+      }
+
+      const customerInfo = {
+        fullName:
+          String(body.customerInfo?.fullName || '').trim() ||
+          String(dbCustomer.name || '').trim(),
+        phone:
+          String(body.customerInfo?.phone || '').trim() ||
+          String(dbCustomer.phone || '').trim(),
+        email:
+          String(body.customerInfo?.email || '').trim().toLowerCase() ||
+          String(dbCustomer.email || '').trim().toLowerCase(),
+        address: String(body.customerInfo?.address || '').trim(),
+        note: String(body.customerInfo?.note || '').trim(),
+        paymentMethod
+      };
+
+      const order = {
+        checkoutIdempotencyKey: attempt.key,
+        checkoutIntentHash: attempt.hash,
+        ...delivery.value,
+        cdate: Date.now(),
+        total: total,
+        status: 'pending',
+        customer: sanitizeCustomerForOrder(dbCustomer),
+        items: orderItems,
+        customerInfo: customerInfo,
+        paymentStatus: PaymentPolicy.checkoutStatus(paymentMethod),
+        voucherCode: voucherResult.voucherCode || '',
+        subtotal: subtotal,
+        discount: discount,
+        shippingFee: shippingFee
+      };
+
+      const result = await OrderLifecycle.reserveAndCreate(order, session, voucherResult.voucher);
+
+      return { result, subtotal, discount, shippingFee, total };
     });
+
+    return res.json(CheckoutIdempotency.response(result));
   } catch (err) {
-    console.error('CHECKOUT BACKEND ERROR:', err);
-    console.error(err.stack);
-
-    return res.status(500).json({
-      success: false,
-      message: err.message || 'Server error'
-    });
+    // Retry winner lookup after transaction rollback/unknown commit acknowledgement.
+    // Reads are always customer scoped; other errors keep their existing contract.
+    if (attempt && !(err instanceof OrderLifecycle.OrderError)) {
+      try {
+        const winner = await CheckoutIdempotency.find(attempt);
+        if (winner) return res.json(CheckoutIdempotency.response(winner));
+      } catch (lookupError) { return OrderLifecycle.errorResponse(res, lookupError); }
+    }
+    return OrderLifecycle.errorResponse(res, err);
   }
 });
 
@@ -1375,57 +1423,7 @@ router.put('/orders/:id/cancel', JwtUtil.checkToken, requireActiveCustomer, asyn
       });
     }
 
-    const order = await Models.Order.findById(orderId).exec();
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy đơn hàng'
-      });
-    }
-
-    const orderCustomerId = String(order.customer?._id || '');
-
-    if (orderCustomerId !== String(customerId)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền hủy đơn hàng này'
-      });
-    }
-
-    const currentStatus = String(order.status || '').toLowerCase();
-
-    if (currentStatus === 'canceled') {
-      return res.json({
-        success: false,
-        message: 'Đơn hàng này đã được hủy trước đó'
-      });
-    }
-
-    if (currentStatus !== 'pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Chỉ đơn hàng đang chờ xác nhận mới được hủy'
-      });
-    }
-
-    order.status = 'canceled';
-    order.udate = Date.now();
-
-    const savedOrder = await order.save();
-
-    if (order.voucherCode) {
-      await Models.Voucher.findOneAndUpdate(
-        {
-          code: normalizeVoucherCode(order.voucherCode),
-          usedCount: { $gt: 0 }
-        },
-        {
-          $inc: { usedCount: -1 },
-          $set: { udate: Date.now() }
-        }
-      ).exec();
-    }
+    const { order: savedOrder } = await OrderLifecycle.transition(orderId, 'canceled', 'customer', customerId);
 
     return res.json({
       success: true,
@@ -1433,11 +1431,7 @@ router.put('/orders/:id/cancel', JwtUtil.checkToken, requireActiveCustomer, asyn
       order: savedOrder
     });
   } catch (err) {
-    console.error('CANCEL ORDER ERROR:', err);
-    return res.status(500).json({
-      success: false,
-      message: err.message || 'Server error'
-    });
+    return OrderLifecycle.errorResponse(res, err);
   }
 });
 

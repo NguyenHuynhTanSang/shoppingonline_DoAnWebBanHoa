@@ -1,0 +1,657 @@
+/* =====================================================
+   WIND FLOWER - ORDER SUCCESS
+===================================================== */
+
+.wf-order-success-page-shell {
+  min-height: 100vh;
+}
+
+.wf-order-success-page {
+  min-height: 70vh;
+
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: center;
+
+  padding-top: 44px;
+  padding-bottom: 68px;
+}
+
+/* =====================================================
+   MAIN CARD
+===================================================== */
+
+.wf-order-success-card {
+  width: 100%;
+  max-width: 820px;
+
+  padding: 36px;
+
+  border:
+    1px solid
+    rgba(
+      20,
+      20,
+      28,
+      0.07
+    );
+
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 16px 42px
+    rgba(
+      0,
+      0,
+      0,
+      0.09
+    );
+}
+
+/* =====================================================
+   SUCCESS ICON
+===================================================== */
+
+.wf-order-success-icon {
+  width: 74px;
+  height: 74px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 18px;
+
+  border:
+    5px solid #dff5e7;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #29b463,
+      #168345
+    );
+
+  color: #ffffff;
+
+  font-size: 37px;
+  font-weight: 900;
+
+  box-shadow:
+    0 10px 24px
+    rgba(
+      22,
+      131,
+      69,
+      0.18
+    );
+}
+
+/* =====================================================
+   HEADING
+===================================================== */
+
+.wf-order-success-heading {
+  max-width: 570px;
+
+  margin: 0 auto 28px;
+
+  text-align: center;
+}
+
+.wf-order-success-eyebrow {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.wf-order-success-heading h1 {
+  margin: 0;
+
+  color: #19171c;
+
+  font-size:
+    clamp(
+      30px,
+      4vw,
+      40px
+    );
+
+  line-height: 1.2;
+}
+
+.wf-order-success-heading p {
+  margin: 13px 0 0;
+
+  color: #736d75;
+
+  font-size: 14px;
+
+  line-height: 1.65;
+}
+
+/* =====================================================
+   ORDER CODE
+===================================================== */
+
+.wf-order-success-order-code {
+  display: grid;
+
+  gap: 5px;
+
+  margin-bottom: 24px;
+
+  padding: 15px 17px;
+
+  border:
+    1px solid #f1cdda;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #fff8fb,
+      #fff0f5
+    );
+
+  text-align: center;
+}
+
+.wf-order-success-order-code span {
+  color: #8e7781;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 1.2px;
+}
+
+.wf-order-success-order-code strong {
+  color:
+    var(
+      --decade-pink-dark,
+      #a00044
+    );
+
+  font-size: 16px;
+
+  line-height: 1.5;
+
+  overflow-wrap: anywhere;
+}
+
+/* =====================================================
+   SECTIONS
+===================================================== */
+
+.wf-order-success-section {
+  padding: 23px 0;
+
+  border-top:
+    1px solid #efedf0;
+}
+
+.wf-order-success-section-heading {
+  margin-bottom: 16px;
+}
+
+.wf-order-success-section-heading > span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 1.1px;
+}
+
+.wf-order-success-section-heading h2 {
+  margin: 0;
+
+  color: #242027;
+
+  font-size: 20px;
+}
+
+/* =====================================================
+   DELIVERY INFORMATION
+===================================================== */
+
+.wf-order-success-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 11px;
+}
+
+.wf-order-success-info-item {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 5px;
+
+  padding: 13px;
+
+  border:
+    1px solid #ece9ed;
+
+  border-radius: 11px;
+
+  background: #faf9fa;
+}
+
+.wf-order-success-info-item-wide {
+  grid-column:
+    1 / -1;
+}
+
+.wf-order-success-info-item span {
+  color: #8b848d;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.45px;
+}
+
+.wf-order-success-info-item strong {
+  color: #39343a;
+
+  font-size: 13px;
+
+  line-height: 1.55;
+
+  overflow-wrap: anywhere;
+}
+
+.wf-order-success-preserve-text {
+  white-space: pre-wrap;
+}
+
+/* =====================================================
+   SUMMARY
+===================================================== */
+
+.wf-order-success-summary {
+  display: grid;
+
+  gap: 13px;
+}
+
+.wf-order-success-summary-row {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 18px;
+
+  color: #756e77;
+
+  font-size: 13px;
+}
+
+.wf-order-success-summary-row strong {
+  color: #3b363c;
+
+  text-align: right;
+
+  overflow-wrap: anywhere;
+}
+
+.wf-order-success-total {
+  display: flex;
+
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 18px;
+
+  padding: 17px;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #fff5f8,
+      #fff9fb
+    );
+
+  border:
+    1px solid #f0d3dd;
+}
+
+.wf-order-success-total span {
+  color: #625b64;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wf-order-success-total strong {
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 25px;
+  font-weight: 900;
+}
+
+/* =====================================================
+   INFORMATION NOTE
+===================================================== */
+
+.wf-order-success-note,
+.wf-order-success-empty {
+  margin-top: 8px;
+
+  padding: 15px 17px;
+
+  border-radius: 12px;
+
+  line-height: 1.6;
+}
+
+.wf-order-success-note {
+  border:
+    1px solid #dbeadf;
+
+  background: #f4fbf6;
+}
+
+.wf-order-success-note strong {
+  color: #267241;
+
+  font-size: 13px;
+}
+
+.wf-order-success-note p {
+  margin: 5px 0 0;
+
+  color: #647068;
+
+  font-size: 12px;
+}
+
+.wf-order-success-empty {
+  border:
+    1px solid #eadde2;
+
+  background: #fff8fa;
+
+  text-align: center;
+}
+
+.wf-order-success-empty strong {
+  color: #514950;
+}
+
+.wf-order-success-empty p {
+  margin: 6px 0 0;
+
+  color: #817981;
+
+  font-size: 13px;
+}
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.wf-order-success-actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+
+  margin-top: 28px;
+}
+
+.wf-order-success-primary-button,
+.wf-order-success-secondary-button,
+.wf-order-success-text-button {
+  min-height: 48px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 16px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  text-align: center;
+}
+
+.wf-order-success-primary-button {
+  border: none;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a,
+        #d81b60,
+        #8f0038
+      )
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 8px 18px
+    rgba(
+      216,
+      27,
+      96,
+      0.2
+    );
+}
+
+.wf-order-success-secondary-button {
+  border:
+    1px solid #ddd9df;
+
+  background: #ffffff;
+
+  color: #443e45;
+}
+
+.wf-order-success-primary-button:hover,
+.wf-order-success-secondary-button:hover {
+  transform:
+    translateY(-1px);
+}
+
+.wf-order-success-secondary-button:hover {
+  border-color:
+    rgba(
+      216,
+      27,
+      96,
+      0.4
+    );
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+}
+
+.wf-order-success-text-button {
+  grid-column:
+    1 / -1;
+
+  min-height: 38px;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+}
+
+.wf-order-success-text-button:hover {
+  text-decoration: underline;
+}
+
+/* =====================================================
+   ACCESSIBILITY
+===================================================== */
+
+.wf-order-success-primary-button:focus-visible,
+.wf-order-success-secondary-button:focus-visible,
+.wf-order-success-text-button:focus-visible {
+  outline:
+    3px solid
+    rgba(
+      216,
+      27,
+      96,
+      0.25
+    );
+
+  outline-offset: 2px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 650px) {
+  .wf-order-success-page {
+    padding-top: 28px;
+    padding-bottom: 48px;
+  }
+
+  .wf-order-success-card {
+    padding: 22px 16px;
+
+    border-radius: 16px;
+  }
+
+  .wf-order-success-icon {
+    width: 62px;
+    height: 62px;
+
+    margin-bottom: 15px;
+
+    border-width: 4px;
+
+    font-size: 30px;
+  }
+
+  .wf-order-success-heading {
+    margin-bottom: 22px;
+  }
+
+  .wf-order-success-heading h1 {
+    font-size: 29px;
+  }
+
+  .wf-order-success-heading p {
+    font-size: 13px;
+  }
+
+  .wf-order-success-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wf-order-success-info-item-wide {
+    grid-column: auto;
+  }
+
+  .wf-order-success-summary-row {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 5px;
+  }
+
+  .wf-order-success-summary-row strong {
+    text-align: left;
+  }
+
+  .wf-order-success-total {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 6px;
+  }
+
+  .wf-order-success-total strong {
+    font-size: 23px;
+  }
+
+  .wf-order-success-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .wf-order-success-text-button {
+    grid-column: auto;
+  }
+}
+
+/* =====================================================
+   VERY SMALL MOBILE
+===================================================== */
+
+@media (max-width: 350px) {
+  .wf-order-success-card {
+    padding:
+      20px 13px;
+  }
+
+  .wf-order-success-heading h1 {
+    font-size: 26px;
+  }
+}

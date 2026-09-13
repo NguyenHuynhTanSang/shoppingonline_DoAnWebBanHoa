@@ -1,0 +1,813 @@
+/* =====================================================
+   WIND FLOWER - AUTH
+
+   Shared for:
+   - Login
+   - Register
+   - Forgot Password
+   - Reset Password
+===================================================== */
+
+.wf-auth-page-shell {
+  min-height: 100vh;
+}
+
+.wf-auth-page {
+  min-height: 70vh;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 52px 20px 64px;
+}
+
+/* =====================================================
+   CARD
+===================================================== */
+
+.wf-auth-card {
+  width: 100%;
+  max-width: 520px;
+
+  padding: 34px;
+
+  border:
+    1px solid
+    rgba(20, 20, 28, 0.07);
+
+  border-radius: 20px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 16px 42px
+    rgba(0, 0, 0, 0.09);
+}
+
+/* =====================================================
+   HEADING
+===================================================== */
+
+.wf-auth-heading {
+  margin-bottom: 28px;
+
+  text-align: center;
+}
+
+.wf-auth-eyebrow {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 11px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.wf-auth-heading h1 {
+  margin: 0;
+
+  color: #18161b;
+
+  font-size:
+    clamp(
+      30px,
+      4vw,
+      38px
+    );
+
+  line-height: 1.2;
+}
+
+.wf-auth-heading h1::after {
+  content: '';
+
+  display: block;
+
+  width: 52px;
+  height: 4px;
+
+  margin: 12px auto 0;
+
+  border-radius: 999px;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a,
+        #d81b60,
+        #8f0038
+      )
+    );
+}
+
+.wf-auth-heading p {
+  max-width: 390px;
+
+  margin: 16px auto 0;
+
+  color: #746d76;
+
+  font-size: 14px;
+
+  line-height: 1.65;
+}
+
+/* =====================================================
+   FORM
+===================================================== */
+
+.wf-auth-form {
+  display: grid;
+
+  gap: 18px;
+
+  width: 100%;
+}
+
+.wf-auth-field {
+  display: grid;
+
+  gap: 8px;
+}
+
+.wf-auth-field label {
+  color: #28242a;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.wf-auth-field label span {
+  margin-left: 3px;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+}
+
+.wf-auth-field input {
+  width: 100%;
+  min-width: 0;
+
+  height: 50px;
+
+  padding: 0 14px;
+
+  border:
+    1px solid #ddd9df;
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  color: #252127;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.wf-auth-field input::placeholder {
+  color: #aaa4ab;
+}
+
+.wf-auth-field input:focus {
+  border-color:
+    rgba(
+      216,
+      27,
+      96,
+      0.65
+    );
+
+  box-shadow:
+    0 0 0 4px
+    rgba(
+      216,
+      27,
+      96,
+      0.08
+    );
+}
+
+.wf-auth-field input:disabled {
+  background: #f7f6f7;
+
+  cursor: not-allowed;
+}
+
+/* =====================================================
+   PASSWORD
+===================================================== */
+
+.wf-auth-password {
+  position: relative;
+}
+
+.wf-auth-password input {
+  padding-right: 50px;
+}
+
+.wf-auth-password-toggle {
+  position: absolute;
+
+  top: 50%;
+  right: 8px;
+
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  transform:
+    translateY(-50%);
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #7e7780;
+
+  font-size: 17px;
+
+  cursor: pointer;
+}
+
+.wf-auth-password-toggle:hover {
+  background: #fff0f6;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+}
+
+.wf-auth-password-toggle:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+.wf-auth-message {
+  padding: 11px 13px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+.wf-auth-message-error {
+  border:
+    1px solid #f4c3c3;
+
+  background: #fff2f2;
+
+  color: #a32626;
+}
+
+.wf-auth-message-success {
+  border:
+    1px solid #bce5c6;
+
+  background: #f0fff4;
+
+  color: #176c32;
+}
+
+/* =====================================================
+   SUBMIT
+===================================================== */
+
+.wf-auth-submit {
+  width: 100%;
+
+  min-height: 50px;
+
+  margin-top: 2px;
+
+  padding: 11px 18px;
+
+  border: none;
+
+  border-radius: 11px;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a,
+        #d81b60,
+        #8f0038
+      )
+    );
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.4px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 18px
+    rgba(
+      216,
+      27,
+      96,
+      0.2
+    );
+}
+
+.wf-auth-submit:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+
+  filter:
+    brightness(1.04);
+}
+
+.wf-auth-submit:disabled {
+  opacity: 0.62;
+
+  cursor: not-allowed;
+}
+
+/* =====================================================
+   OPTIONS
+===================================================== */
+
+.wf-auth-options {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin-top: 18px;
+}
+
+.wf-auth-remember {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  color: #686169;
+
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+.wf-auth-remember input {
+  width: 16px;
+  height: 16px;
+
+  accent-color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+}
+
+.wf-auth-link {
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wf-auth-link:hover {
+  color:
+    var(
+      --decade-pink-dark,
+      #a00044
+    );
+
+  text-decoration: underline;
+}
+
+/* =====================================================
+   RESET LINK BOX
+===================================================== */
+
+.wf-auth-reset-box {
+  padding: 15px;
+
+  border:
+    1px solid #f1c7d6;
+
+  border-radius: 13px;
+
+  background: #fff7fa;
+}
+
+.wf-auth-reset-box-heading {
+  display: grid;
+
+  gap: 4px;
+
+  margin-bottom: 11px;
+}
+
+.wf-auth-reset-box-heading span {
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 1px;
+}
+
+.wf-auth-reset-box-heading strong {
+  color: #312c32;
+
+  font-size: 14px;
+}
+
+.wf-auth-reset-link {
+  display: block;
+
+  width: 100%;
+
+  padding: 11px 12px;
+
+  border:
+    1px solid #eadce2;
+
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color:
+    var(
+      --decade-pink-dark,
+      #a00044
+    );
+
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  overflow-wrap: anywhere;
+
+  word-break: break-all;
+}
+
+.wf-auth-reset-link:hover {
+  border-color:
+    rgba(
+      216,
+      27,
+      96,
+      0.35
+    );
+
+  background: #fffafd;
+}
+
+.wf-auth-reset-actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 9px;
+
+  margin-top: 12px;
+}
+
+.wf-auth-reset-open,
+.wf-auth-reset-copy {
+  min-height: 42px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 9px 12px;
+
+  border-radius: 9px;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  text-align: center;
+
+  cursor: pointer;
+}
+
+.wf-auth-reset-open {
+  border: none;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a,
+        #d81b60,
+        #8f0038
+      )
+    );
+
+  color: #ffffff;
+}
+
+.wf-auth-reset-copy {
+  border:
+    1px solid #ddd9df;
+
+  background: #ffffff;
+
+  color: #413b42;
+}
+
+.wf-auth-reset-open:hover,
+.wf-auth-reset-copy:hover {
+  transform:
+    translateY(-1px);
+}
+
+.wf-auth-reset-copy:hover {
+  border-color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+}
+
+/* =====================================================
+   DIVIDER
+===================================================== */
+
+.wf-auth-divider {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: 28px 0 20px;
+
+  color: #979098;
+
+  font-size: 12px;
+}
+
+.wf-auth-divider::before {
+  content: '';
+
+  position: absolute;
+
+  left: 0;
+  right: 0;
+  top: 50%;
+
+  height: 1px;
+
+  background: #ece9ed;
+}
+
+.wf-auth-divider span {
+  position: relative;
+
+  z-index: 1;
+
+  padding: 0 12px;
+
+  background: #ffffff;
+}
+
+/* =====================================================
+   SECONDARY CTA
+===================================================== */
+
+.wf-auth-register {
+  text-align: center;
+}
+
+.wf-auth-register p {
+  max-width: 380px;
+
+  margin:
+    0 auto 14px;
+
+  color: #777078;
+
+  font-size: 13px;
+
+  line-height: 1.6;
+}
+
+.wf-auth-secondary-button {
+  width: 100%;
+
+  min-height: 48px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 16px;
+
+  border:
+    1px solid
+    rgba(
+      216,
+      27,
+      96,
+      0.28
+    );
+
+  border-radius: 11px;
+
+  background: #fff5f8;
+
+  color:
+    var(
+      --decade-pink-dark,
+      #a00044
+    );
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.wf-auth-secondary-button:hover {
+  border-color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  background: #ffe9f1;
+
+  transform:
+    translateY(-1px);
+}
+
+/* =====================================================
+   FOCUS
+===================================================== */
+
+.wf-auth-submit:focus-visible,
+.wf-auth-secondary-button:focus-visible,
+.wf-auth-link:focus-visible,
+.wf-auth-password-toggle:focus-visible,
+.wf-auth-reset-open:focus-visible,
+.wf-auth-reset-copy:focus-visible,
+.wf-auth-reset-link:focus-visible {
+  outline:
+    3px solid
+    rgba(
+      216,
+      27,
+      96,
+      0.25
+    );
+
+  outline-offset: 2px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 576px) {
+  .wf-auth-page {
+    align-items: flex-start;
+
+    padding:
+      30px 12px 48px;
+  }
+
+  .wf-auth-card {
+    padding:
+      26px 18px;
+
+    border-radius: 16px;
+  }
+
+  .wf-auth-heading {
+    margin-bottom: 24px;
+  }
+
+  .wf-auth-heading h1 {
+    font-size: 29px;
+  }
+
+  .wf-auth-heading p {
+    font-size: 13px;
+  }
+
+  .wf-auth-field input {
+    height: 48px;
+  }
+
+  .wf-auth-options {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 12px;
+  }
+
+  .wf-auth-reset-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .wf-auth-divider {
+    margin:
+      24px 0 18px;
+  }
+}
+/* =====================================================
+   PASSWORD HINT
+===================================================== */
+
+.wf-auth-password-hint {
+  margin: -6px 0 0;
+
+  color: #888188;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+/* =====================================================
+   VERY SMALL MOBILE
+===================================================== */
+
+@media (max-width: 350px) {
+  .wf-auth-page {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .wf-auth-card {
+    padding:
+      22px 14px;
+  }
+
+  .wf-auth-heading h1 {
+    font-size: 26px;
+  }
+}

@@ -52,4 +52,32 @@ async function verifyPassword(plainPassword, storedHash) {
   }
 }
 
-module.exports = { hashPassword, verifyPassword, isBcryptHash, classifyStoredPassword };
+// Read compatibility only: callers preserve their existing input normalization.
+// No hashing, migration, or persistence occurs on this path.
+async function verifyLoginPassword(plainPassword, storedPassword) {
+  if (typeof plainPassword !== 'string') return false;
+  const classification = classifyStoredPassword(storedPassword);
+  if (classification === 'bcrypt') return verifyPassword(plainPassword, storedPassword);
+  if (classification === 'legacy_plaintext') return plainPassword === storedPassword;
+  return false;
+}
+
+// Called after credential verification and the route's existing status checks.
+// Infrastructure errors intentionally propagate to the generic login error
+// handler: never issue a JWT with an unresolved migration race.
+async function migrateLegacyLogin(account, suppliedPassword, dao, isAllowed) {
+  if (!account || !isAllowed(account)) return null;
+  if (classifyStoredPassword(account.password) !== 'legacy_plaintext') return account;
+  if (!await verifyLoginPassword(suppliedPassword, account.password)) return null;
+  // Preserve old login compatibility for credentials outside new-write policy.
+  if (suppliedPassword.length < 6 || Buffer.byteLength(suppliedPassword, 'utf8') > MAX_BYTES) return account;
+  const expected = account.password;
+  const newHash = await module.exports.hashPassword(suppliedPassword);
+  const updated = await dao.migrateLegacyPasswordIfUnchanged(account._id, expected, newHash);
+  if (updated) return String(updated._id) === String(account._id) && isAllowed(updated) ? updated : null;
+  const current = await dao.selectByID(account._id);
+  if (!current || String(current._id) !== String(account._id) || !isAllowed(current)) return null;
+  return await verifyLoginPassword(suppliedPassword, current.password) ? current : null;
+}
+
+module.exports = { hashPassword, verifyPassword, isBcryptHash, classifyStoredPassword, verifyLoginPassword, migrateLegacyLogin };

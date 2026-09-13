@@ -1,9 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+router.use('/support-requests', require('./support'));
 
 // utils
 const JwtUtil = require('../utils/JwtUtil');
+const PasswordService = require('../services/PasswordService');
+const AuthRateLimit = require('../utils/AuthRateLimit');
+const { isValidOrderStatus } = require('../utils/OrderStateMachine');
+const OrderLifecycle = require('../services/OrderLifecycleService');
 
 // daos
 const AdminDAO = require('../models/AdminDAO');
@@ -26,6 +31,13 @@ function safeAccount(account) {
   for (const key of ['_id', 'username', 'name', 'phone', 'email', 'active', 'cdate', 'udate']) {
     if (account[key] !== undefined) result[key] = account[key];
   }
+  return result;
+}
+
+function safeOrderCustomer(order) {
+  if (!order) return null;
+  const result = typeof order.toObject === 'function' ? order.toObject() : { ...order };
+  if (result.customer) result.customer = safeAccount(result.customer);
   return result;
 }
 
@@ -254,11 +266,11 @@ function validateVoucherData(voucher) {
 // =========================
 // login
 // =========================
-router.post('/login', async function (req, res) {
+router.post('/login', AuthRateLimit.login, async function (req, res) {
   try {
     const { username, password } = req.body || {};
 
-    if (!username || !password) {
+    if (typeof username !== 'string' || !username || !password) {
       return res.json({
         success: false,
         message: 'Username and password are required'
@@ -266,15 +278,18 @@ router.post('/login', async function (req, res) {
     }
 
     let admin = null;
-    if (typeof AdminDAO.selectByUsernameAndPassword === 'function') {
-      admin = await AdminDAO.selectByUsernameAndPassword(username, password);
+    if (typeof AdminDAO.selectByUsername === 'function') {
+      admin = await AdminDAO.selectByUsername(username);
     } else {
-      admin = await Models.Admin.findOne({ username, password }).exec();
+      admin = await Models.Admin.findOne({ username }).exec();
     }
 
-    if (admin) {
+    if (admin && await PasswordService.verifyLoginPassword(String(password), admin.password)) {
+      admin = await PasswordService.migrateLegacyLogin(admin, String(password), AdminDAO, () => true);
+      if (!admin) return res.json({ success: false, message: 'Incorrect username or password' });
       const token = JwtUtil.genToken({
         sub: admin._id,
+        tokenVersion: admin.tokenVersion ?? 0,
         username: admin.username,
         role: 'admin'
       });
@@ -292,19 +307,22 @@ router.post('/login', async function (req, res) {
     }
 
     let staff = null;
-    if (typeof StaffDAO.selectByUsernameAndPassword === 'function') {
-      staff = await StaffDAO.selectByUsernameAndPassword(username, password);
+    if (typeof StaffDAO.selectByUsername === 'function') {
+      staff = await StaffDAO.selectByUsername(username);
     } else {
-      staff = await Models.Staff.findOne({ username, password }).exec();
+      staff = await Models.Staff.findOne({ username }).exec();
     }
 
     if (staff && Number(staff.active) !== 1) {
       staff = null;
     }
 
-    if (staff) {
+    if (staff && await PasswordService.verifyLoginPassword(String(password), staff.password)) {
+      staff = await PasswordService.migrateLegacyLogin(staff, String(password), StaffDAO, account => Number(account.active) === 1);
+      if (!staff) return res.json({ success: false, message: 'Incorrect username or password' });
       const token = JwtUtil.genToken({
         sub: staff._id,
+        tokenVersion: staff.tokenVersion ?? 0,
         username: staff.username,
         role: 'staff'
       });
@@ -327,7 +345,7 @@ router.post('/login', async function (req, res) {
       message: 'Incorrect username or password'
     });
   } catch (err) {
-    console.error(err);
+    console.error('Admin/staff login failed');
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -431,7 +449,7 @@ router.post(
 
       const newStaff = {
         username: String(body.username || '').trim(),
-        password: String(body.password || genRandomPassword()).trim(),
+        password: body.password === undefined || body.password === '' ? genRandomPassword() : (typeof body.password === 'string' ? body.password.trim() : body.password),
         name: String(body.name || '').trim(),
         phone: String(body.phone || '').trim(),
         email: String(body.email || '').trim(),
@@ -461,6 +479,7 @@ router.post(
         });
       }
 
+      newStaff.password = await PasswordService.hashPassword(newStaff.password);
       let result = null;
       if (typeof StaffDAO.insert === 'function') {
         result = await StaffDAO.insert(newStaff);
@@ -477,7 +496,10 @@ router.post(
         staff: safeAccount(result)
       });
     } catch (err) {
-      console.error(err);
+    if (err instanceof TypeError || err instanceof RangeError) {
+      return res.status(400).json({ success: false, message: 'Password must be a string of at least 6 characters and at most 72 UTF-8 bytes' });
+    }
+      console.error('Staff creation failed');
       res.status(500).json({
         success: false,
         message: 'Server error'
@@ -509,7 +531,16 @@ router.put(
 
       const username =
         body.username !== undefined ? String(body.username || '').trim() : oldStaff.username;
-      const password = String(body.password || '').trim() || oldStaff.password;
+      let password = oldStaff.password;
+      let passwordChanged = false;
+      if (body.password !== undefined && body.password !== '') {
+        if (typeof body.password !== 'string') throw new TypeError('Invalid password');
+        if (body.password.trim()) {
+          const hash = await PasswordService.hashPassword(body.password.trim());
+          passwordChanged = !await PasswordService.verifyLoginPassword(body.password.trim(), oldStaff.password);
+          if (passwordChanged) password = hash;
+        }
+      }
       const name = body.name !== undefined ? String(body.name || '').trim() : oldStaff.name;
       const phone = body.phone !== undefined ? String(body.phone || '').trim() : oldStaff.phone;
       const email = body.email !== undefined ? String(body.email || '').trim() : oldStaff.email;
@@ -545,33 +576,40 @@ router.put(
           phone,
           email,
           active
-        });
+        }, passwordChanged);
       } else {
         updated = await Models.Staff.findByIdAndUpdate(
           id,
           {
+            $set: {
             username,
-            password,
+            ...(passwordChanged ? { password } : {}),
             name,
             phone,
             email,
             active,
             udate: Date.now()
+            },
+            ...(passwordChanged ? { $inc: { tokenVersion: 1 } } : {})
           },
           { new: true }
         ).exec();
       }
 
+      if (!updated) return res.status(404).json({ success: false, message: 'Account not found' });
       res.json({
         success: true,
         message: 'Cập nhật nhân viên thành công',
         staff: safeAccount(updated)
       });
     } catch (err) {
-      console.error(err);
+    if (err instanceof TypeError || err instanceof RangeError) {
+      return res.status(400).json({ success: false, message: 'Password must be a string of at least 6 characters and at most 72 UTF-8 bytes' });
+    }
+      console.error('Staff update failed');
       res.status(500).json({
         success: false,
-        message: err.message || 'Server error'
+        message: 'Server error'
       });
     }
   }
@@ -622,10 +660,10 @@ router.put(
         staff: safeAccount(updated)
       });
     } catch (err) {
-      console.error(err);
+      console.error('Staff status update failed');
       res.status(500).json({
         success: false,
-        message: err.message || 'Server error'
+        message: 'Server error'
       });
     }
   }
@@ -1500,10 +1538,10 @@ router.put(
         customer: safeAccount(customer)
       });
     } catch (err) {
-      console.error(err);
+      console.error('Customer status update failed');
       res.status(500).json({
         success: false,
-        message: err.message || 'Server error'
+        message: 'Server error'
       });
     }
   }
@@ -1521,7 +1559,7 @@ router.get(
       const orders = await OrderDAO.selectAll();
       res.json({
         success: true,
-        orders: orders
+        orders: orders.map(safeOrderCustomer)
       });
     } catch (err) {
       console.error(err);
@@ -1540,100 +1578,15 @@ router.put(
   async function (req, res) {
     try {
       const _id = req.params.id;
-      const newStatus = String(req.body.status || '').trim().toLowerCase();
-      const allowedStatuses = [
-        'pending',
-        'approved',
-        'preparing',
-        'delivering',
-        'completed',
-        'canceled'
-      ];
-
-      if (!allowedStatuses.includes(newStatus)) {
+      const newStatus = typeof req.body.status === 'string' ? req.body.status.trim().toLowerCase() : '';
+      if (!isValidOrderStatus(newStatus)) {
         return res.status(400).json({
           success: false,
           message: 'Trạng thái đơn hàng không hợp lệ'
         });
       }
 
-      const order = await Models.Order.findById(_id).exec();
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: 'Không tìm thấy đơn hàng'
-        });
-      }
-
-      const oldStatus = String(order.status || '').trim().toLowerCase();
-
-      if (oldStatus === newStatus) {
-        return res.json({
-          success: true,
-          message: 'Trạng thái đơn hàng không thay đổi',
-          order: order
-        });
-      }
-
-      if (oldStatus === 'canceled') {
-        return res.status(400).json({
-          success: false,
-          message: 'Đơn hàng đã hủy không thể cập nhật trạng thái nữa'
-        });
-      }
-
-      if (oldStatus === 'completed') {
-        return res.status(400).json({
-          success: false,
-          message: 'Đơn hàng đã hoàn thành không thể đổi sang trạng thái khác'
-        });
-      }
-
-      if (newStatus === 'completed') {
-        for (const item of order.items || []) {
-          const productId = item.product?._id;
-          const qty = Number(item.quantity || 0);
-
-          const product = await ProductDAO.selectByID(productId);
-          if (!product) {
-            return res.status(400).json({
-              success: false,
-              message: 'Không tìm thấy sản phẩm trong đơn hàng'
-            });
-          }
-
-          if (Number(product.stock || 0) < qty) {
-            return res.status(400).json({
-              success: false,
-              message: `Sản phẩm "${product.name}" không đủ tồn kho`
-            });
-          }
-        }
-
-        for (const item of order.items || []) {
-          const productId = item.product?._id;
-          const qty = Number(item.quantity || 0);
-          await ProductDAO.completeSale(productId, qty);
-        }
-      }
-
-      if (newStatus === 'canceled' && order.voucherCode) {
-        await Models.Voucher.findOneAndUpdate(
-          {
-            code: normalizeVoucherCode(order.voucherCode),
-            usedCount: { $gt: 0 }
-          },
-          {
-            $inc: { usedCount: -1 },
-            $set: { udate: Date.now() }
-          }
-        ).exec();
-      }
-
-      order.status = newStatus;
-      order.udate = Date.now();
-
-      const savedOrder = await order.save();
+      const { order: savedOrder } = await OrderLifecycle.transition(_id, newStatus, req.decoded?.role);
 
       return res.json({
         success: true,
@@ -1641,14 +1594,10 @@ router.put(
           newStatus === 'canceled'
             ? 'Hủy đơn hàng thành công'
             : 'Cập nhật trạng thái đơn hàng thành công',
-        order: savedOrder
+        order: safeOrderCustomer(savedOrder)
       });
     } catch (err) {
-      console.error(err);
-      res.status(500).json({
-        success: false,
-        message: err.message || 'Server error'
-      });
+      return OrderLifecycle.errorResponse(res, err);
     }
   }
 );
@@ -1664,7 +1613,7 @@ router.get(
 
       res.json({
         success: true,
-        orders: orders
+        orders: orders.map(safeOrderCustomer)
       });
     } catch (err) {
       console.error(err);

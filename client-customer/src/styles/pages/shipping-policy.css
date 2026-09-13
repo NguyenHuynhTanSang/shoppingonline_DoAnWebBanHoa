@@ -1,0 +1,26 @@
+.wf-shipping { max-width: 1120px; margin: 0 auto; padding: 40px 24px 64px; color: #30252b; line-height: 1.75; }
+.wf-shipping-hero { padding: 36px; border: 1px solid #f1d1dd; border-radius: 22px; background: linear-gradient(135deg, #fff, #fce8ef); }
+.wf-shipping h1 { margin: 8px 0 20px; color: #a00044; font-size: clamp(28px, 4vw, 42px); line-height: 1.25; }
+.wf-shipping h2 { font-size: 21px; line-height: 1.4; margin: 12px 0; }
+.wf-shipping p { margin: 0 0 14px; }
+.wf-shipping .wf-shipping-eyebrow { font-size: 12px; letter-spacing: 2px; font-weight: 700; color: #a00044; }
+.wf-shipping-hero p { max-width: 800px; }
+.wf-shipping .wf-shipping-intro { margin: 24px 0; }
+.wf-shipping a { color: #a00044; font-weight: 600; text-underline-offset: 4px; }
+.wf-shipping a:focus-visible { outline: 3px solid #a00044; outline-offset: 4px; }
+.wf-shipping-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.wf-shipping-grid section { min-width: 0; padding: 26px; border: 1px solid #eadfe4; border-radius: 16px; background: #fff; }
+.wf-shipping-label { display: inline-block; color: #a00044; background: #fce8ef; padding: 4px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.wf-shipping-label-pending { background: #f3f1ee; color: #62513a; }
+.wf-shipping-pending { padding-left: 12px; border-left: 3px solid #c6ac84; }
+.wf-shipping-slots { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 16px 0; }
+.wf-shipping-slots li { padding: 6px 12px; background: #fce8ef; border-radius: 8px; font-weight: 600; }
+.wf-shipping-fees { margin: 16px 0; }
+.wf-shipping-fees div { padding: 12px 0; border-bottom: 1px solid #eadfe4; }
+.wf-shipping-fees dd { margin: 4px 0 0; font-weight: 700; color: #a00044; }
+.wf-shipping-contact, .wf-shipping-hero > a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 720px) {
+  .wf-shipping { padding: 24px 16px 48px; }
+  .wf-shipping-grid { grid-template-columns: minmax(0, 1fr); }
+  .wf-shipping-hero, .wf-shipping-grid section { padding: 22px; }
+}

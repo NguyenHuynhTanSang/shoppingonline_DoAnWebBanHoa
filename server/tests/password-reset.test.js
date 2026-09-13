@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const PasswordService = require('../services/PasswordService');
 
 const read = file => fs.readFileSync(path.join(__dirname, file), 'utf8');
 const marker = 'SYNTHETIC_RESET_TOKEN';
@@ -17,7 +18,7 @@ function setup(mail = async () => true) {
     findByIdAndUpdate: (id, values) => query(Object.assign(state.customer, values)),
     findOneAndUpdate: (filter, values) => {
       if (state.updateError) throw Error(link);
-      return query(!state.noMatch && matches(filter) ? Object.assign(state.customer, values) : null);
+      return query(!state.noMatch && matches(filter) ? Object.assign(state.customer, values.$set, { tokenVersion: (state.customer.tokenVersion || 0) + (values.$inc?.tokenVersion || 0) }) : null);
     }
   } };
   const module = { exports: {} };
@@ -29,7 +30,8 @@ function setup(mail = async () => true) {
   const routes = {};
   const source = read('../api/customer.js');
   vm.runInNewContext(source.slice(source.indexOf("router.post('/forgot-password'"), source.indexOf("router.put('/profile'")), {
-    router: { post: (url, handler) => { routes[url] = handler; } },
+    PasswordService, TypeError, RangeError, AuthRateLimit: { forgot() {}, reset() {} },
+    router: { post: (url, ...handlersList) => { routes[url] = handlersList.at(-1); } },
     CustomerDAO: module.exports, EmailUtil: { sendResetPasswordEmail: mail },
     MyConstants: { CLIENT_URL: 'https://shop.example' }, genRandomToken: () => marker,
     Date, Promise, setTimeout: callback => setTimeout(callback, 5), clearTimeout,
@@ -62,11 +64,12 @@ test('forgot responses are identical for known/unknown email, delivery failure, 
 });
 
 test('reset validates types, minimum length, token and expiry', async () => {
-  for (const body of [{}, { token: {}, password: 'abcdef' }, { token: marker, password: 123456 }, { token: marker, password: '     ' }, { token: marker, password: '12345' }, { token: 'invalid', password: 'abcdef' }]) {
+  for (const body of [{}, { token: {}, password: 'abcdef' }, { token: marker, password: 123456 }, { token: marker, password: '     ' }, { token: marker, password: '12345' }, { token: marker, password: '🌸'.repeat(19) }, { token: 'invalid', password: 'abcdef' }]) {
     const state = setup();
     const res = await state.request('/reset-password', body);
     assert.equal(res.code, 400); assert.equal(res.data.success, false);
     assert.equal(state.customer.password, 'old');
+    assert.equal(state.customer.resetPasswordToken, marker);
   }
   const state = setup(); state.customer.resetPasswordExpire = Date.now() - 1;
   assert.equal((await state.request('/reset-password', { token: marker, password: 'abcdef' })).code, 400);
@@ -76,7 +79,9 @@ test('atomic DAO update clears token; reuse and lost update cannot succeed', asy
   const state = setup();
   const body = { token: marker, password: 'abcdef' };
   assert.equal((await state.request('/reset-password', body)).data.success, true);
-  assert.equal(state.customer.password, 'abcdef');
+  assert.equal(PasswordService.isBcryptHash(state.customer.password), true);
+  assert.equal(await PasswordService.verifyLoginPassword('abcdef', state.customer.password), true);
+  assert.equal(await PasswordService.verifyLoginPassword('old', state.customer.password), false);
   assert.equal(state.customer.resetPasswordToken, '');
   assert.equal(state.customer.resetPasswordExpire, 0);
   assert.equal((await state.request('/reset-password', body)).code, 400);

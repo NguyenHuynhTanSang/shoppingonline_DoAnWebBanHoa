@@ -1,4 +1,7 @@
 import './App.css';
+import './styles/index.css';
+
+import AIChatComponent from './components/AIChatComponent';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MainComponent from './components/MainComponent';
 import CartComponent from './components/CartComponent';
@@ -17,6 +20,9 @@ import NewsComponent from './components/NewsComponent';
 import GuideComponent from './components/GuideComponent';
 import PaymentPolicyComponent from './components/PaymentPolicyComponent';
 import ContactComponent from './components/ContactComponent';
+import ShippingPolicyComponent from './components/ShippingPolicyComponent';
+import ReturnPolicyComponent from './components/ReturnPolicyComponent';
+
 function App() {
   return (
     <BrowserRouter>
@@ -25,21 +31,30 @@ function App() {
         <Route path="/cart" element={<CartComponent />} />
         <Route path="/checkout" element={<CheckoutComponent />} />
         <Route path="/order-success" element={<OrderSuccessComponent />} />
+
         <Route path="/login" element={<LoginComponent />} />
         <Route path="/register" element={<RegisterComponent />} />
         <Route path="/forgot-password" element={<ForgotPasswordComponent />} />
         <Route path="/reset-password" element={<ResetPasswordComponent />} />
+
         <Route path="/product/:id" element={<ProductDetailComponent />} />
+
         <Route path="/category/:slug" element={<CategoryPageComponent />} />
         <Route path="/target/:slug" element={<CategoryPageComponent />} />
         <Route path="/search" element={<SearchPageComponent />} />
+
         <Route path="/my-orders" element={<MyOrdersComponent />} />
+
         <Route path="/gioi-thieu" element={<AboutComponent />} />
         <Route path="/tin-tuc" element={<NewsComponent />} />
         <Route path="/huong-dan-mua-hang" element={<GuideComponent />} />
         <Route path="/hinh-thuc-thanh-toan" element={<PaymentPolicyComponent />} />
         <Route path="/lien-he" element={<ContactComponent />} />
+        <Route path="/chinh-sach-giao-hang" element={<ShippingPolicyComponent />} />
+        <Route path="/doi-tra-hoan-tien" element={<ReturnPolicyComponent />} />
       </Routes>
+
+      <AIChatComponent />
     </BrowserRouter>
   );
 }

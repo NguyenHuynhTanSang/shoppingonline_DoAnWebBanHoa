@@ -1,0 +1,306 @@
+/* =====================================================
+   WIND FLOWER - FOOTER
+===================================================== */
+
+.footer-section {
+  width: 100%;
+
+  padding: 42px 0 90px;
+
+  border-top: 4px solid #d81b60;
+
+  background:
+    linear-gradient(
+      180deg,
+      #050507 0%,
+      #0f0f14 100%
+    );
+
+  color: #ffffff;
+}
+
+.footer-grid {
+  display: grid;
+
+  grid-template-columns:
+    1.2fr 1fr 1.2fr;
+
+  gap: 26px;
+
+  align-items: start;
+}
+
+.footer-box {
+  min-width: 0;
+}
+
+.footer-box h3 {
+  margin: 0 0 20px;
+
+  padding: 14px 18px;
+
+  border-radius: 14px 14px 0 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff3b8a 0%,
+      #d81b60 55%,
+      #8f0038 100%
+    );
+
+  color: #ffffff;
+
+  font-size: 25px;
+  font-weight: 800;
+
+  line-height: 1.25;
+
+  box-shadow:
+    0 8px 18px
+    rgba(216, 27, 96, 0.15);
+}
+
+/* =====================================================
+   LIST
+===================================================== */
+
+.footer-box ul {
+  margin: 0;
+
+  padding: 0 16px;
+
+  list-style: none;
+}
+
+.footer-box li {
+  margin-bottom: 13px;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.9
+    );
+
+  font-size: 16px;
+
+  line-height: 1.55;
+
+  overflow-wrap: anywhere;
+}
+
+.footer-box a {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.92
+    );
+
+  text-decoration: none;
+
+  transition:
+    color 0.2s ease;
+}
+
+.footer-box a:hover {
+  color: #ff8fbb;
+}
+
+.footer-link-list a {
+  display: inline-block;
+}
+
+/* =====================================================
+   MAP
+===================================================== */
+
+.map-box {
+  width: 100%;
+
+  overflow: hidden;
+
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 22px
+    rgba(0, 0, 0, 0.24);
+}
+
+.map-box iframe {
+  display: block;
+
+  width: 100%;
+  height: 220px;
+
+  border: 0;
+}
+
+.map-link-wrap {
+  margin-top: 12px;
+}
+
+.map-link-btn {
+  display: inline-flex;
+
+  min-height: 42px;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 16px;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff3b8a 0%,
+      #d81b60 55%,
+      #8f0038 100%
+    );
+
+  color: #ffffff !important;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  text-decoration: none;
+
+  box-shadow:
+    0 6px 14px
+    rgba(216, 27, 96, 0.2);
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.map-link-btn:hover {
+  transform: translateY(-1px);
+
+  filter: brightness(1.05);
+
+  color: #ffffff !important;
+}
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 992px) {
+  .footer-section {
+    padding: 34px 0;
+  }
+
+  .footer-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 22px;
+  }
+
+  .footer-box:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .footer-box h3 {
+    font-size: 22px;
+  }
+
+  .footer-box li {
+    font-size: 15px;
+  }
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 640px) {
+  .footer-section {
+    padding: 26px 0 30px;
+  }
+
+  .footer-section
+  > .container {
+    width: 100%;
+
+    max-width:
+      calc(100% - 24px);
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+
+    gap: 22px;
+  }
+
+  .footer-box:last-child {
+    grid-column: auto;
+  }
+
+  .footer-box h3 {
+    margin-bottom: 14px;
+
+    padding: 12px 14px;
+
+    border-radius: 11px 11px 0 0;
+
+    font-size: 19px;
+  }
+
+  .footer-box ul {
+    padding: 0 8px;
+  }
+
+  .footer-box li {
+    margin-bottom: 10px;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+  }
+
+  .map-box iframe {
+    height: 190px;
+  }
+
+  .map-link-btn {
+    width: 100%;
+
+    min-height: 42px;
+  }
+}
+
+/* =====================================================
+   VERY SMALL MOBILE
+===================================================== */
+
+@media (max-width: 360px) {
+  .footer-section
+  > .container {
+    max-width:
+      calc(100% - 20px);
+  }
+
+  .footer-box h3 {
+    font-size: 18px;
+  }
+
+  .footer-box li {
+    font-size: 13px;
+  }
+
+  .map-box iframe {
+    height: 170px;
+  }
+}

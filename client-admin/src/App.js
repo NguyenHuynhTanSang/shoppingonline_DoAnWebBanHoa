@@ -10,6 +10,7 @@ import StaffAdminComponent from './pages/StaffAdminComponent';
 import VoucherAdminComponent from './pages/VoucherAdminComponent';
 
 import './App.css';
+import SupportQueueComponent from './pages/SupportQueueComponent';
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('adminToken');
@@ -21,6 +22,7 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/support-requests" element={<PrivateRoute><SupportQueueComponent /></PrivateRoute>} />
       <Route path="/login" element={<LoginAdminComponent />} />
 
       <Route

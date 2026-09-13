@@ -1,0 +1,344 @@
+/* =====================================================
+   WIND FLOWER - SHARED PRODUCT CARD
+
+   Dùng chung dần cho:
+   - Search
+   - Category
+   - Home
+===================================================== */
+
+.wf-product-card {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(20, 20, 28, 0.06);
+  border-radius: 16px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 24px
+    rgba(0, 0, 0, 0.08);
+
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.wf-product-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow:
+    0 14px 30px
+    rgba(0, 0, 0, 0.12);
+}
+
+/* =====================================================
+   IMAGE
+===================================================== */
+
+.wf-product-card-image-link {
+  display: block;
+
+  width: 100%;
+
+  aspect-ratio: 1 / 1;
+
+  overflow: hidden;
+
+  background: #f2f2f5;
+}
+
+.wf-product-card-image {
+  display: block;
+
+  width: 100% !important;
+  height: 100% !important;
+
+  object-fit: cover;
+
+  transition:
+    transform 0.25s ease;
+}
+
+.wf-product-card:hover
+.wf-product-card-image {
+  transform: scale(1.025);
+}
+
+/* =====================================================
+   CONTENT
+===================================================== */
+
+.wf-product-card-name {
+  margin: 14px 14px 8px;
+
+  min-height: 46px;
+
+  color: #19191f;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+.wf-product-card-price-box {
+  min-height: 50px;
+
+  padding: 0 14px;
+}
+
+.wf-product-card-original-price {
+  margin: 0 0 3px;
+
+  color: #888888;
+
+  font-size: 13px;
+
+  text-decoration: line-through;
+}
+
+.wf-product-card-price {
+  margin: 0;
+
+  color: var(--decade-pink, #d81b60);
+
+  font-size: 17px;
+  font-weight: 800;
+
+  line-height: 1.4;
+}
+
+/* =====================================================
+   STOCK
+===================================================== */
+
+.wf-product-card-stock {
+  min-height: 40px;
+
+  display: flex;
+  align-items: center;
+
+  margin: 7px 14px 10px;
+}
+
+.product-stock-badge {
+  display: inline-block;
+
+  max-width: 100%;
+
+  padding: 6px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  text-align: center;
+
+  white-space: normal;
+
+  overflow-wrap: anywhere;
+
+  box-shadow:
+    0 2px 8px
+    rgba(0, 0, 0, 0.06);
+}
+
+.product-stock-badge.stock-in {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.product-stock-badge.stock-low {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.product-stock-badge.stock-out {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.product-stock-badge.stock-unknown {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.wf-product-card-actions {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-top: auto;
+
+  padding: 0 14px 14px;
+}
+
+.wf-product-card-actions button {
+  width: 100%;
+  min-height: 40px;
+
+  margin: 0;
+
+  padding: 9px 10px;
+
+  border: none;
+  border-radius: 9px;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a,
+        #d81b60,
+        #8f0038
+      )
+    );
+
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 6px 14px
+    rgba(216, 27, 96, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.wf-product-card-actions
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  filter: brightness(1.05);
+}
+
+.wf-product-card-actions
+button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+.wf-product-card-actions
+.wf-product-detail-btn {
+  background:
+    linear-gradient(
+      135deg,
+      #0f0f14 0%,
+      #22222b 100%
+    ) !important;
+
+  color: #ffffff !important;
+
+  border:
+    1px solid
+    rgba(216, 27, 96, 0.3);
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 768px) {
+  .wf-product-card {
+    border-radius: 12px;
+  }
+
+  .wf-product-card-name {
+    margin: 10px 10px 7px;
+
+    min-height: 40px;
+
+    font-size: 13px;
+  }
+
+  .wf-product-card-price-box {
+    min-height: 43px;
+
+    padding: 0 10px;
+  }
+
+  .wf-product-card-original-price {
+    font-size: 10px;
+  }
+
+  .wf-product-card-price {
+    font-size: 13px;
+  }
+
+  .wf-product-card-stock {
+    min-height: 34px;
+
+    margin: 6px 10px 8px;
+  }
+
+  .wf-product-card-stock
+  .product-stock-badge {
+    padding: 5px 7px;
+
+    font-size: 9px;
+  }
+
+  .wf-product-card-actions {
+    gap: 7px;
+
+    padding: 0 10px 10px;
+  }
+
+  .wf-product-card-actions button {
+    min-height: 36px;
+
+    padding: 7px 5px;
+
+    font-size: 10px;
+
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 350px) {
+  .wf-product-card-name {
+    min-height: 0;
+
+    font-size: 15px;
+  }
+
+  .wf-product-card-price {
+    font-size: 16px;
+  }
+
+  .wf-product-card-stock
+  .product-stock-badge {
+    font-size: 12px;
+  }
+
+  .wf-product-card-actions button {
+    min-height: 40px;
+
+    font-size: 13px;
+  }
+}

@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const { DELIVERY_TIME_SLOTS, CARD_MESSAGE_LIMIT, isCalendarDate } = require('../utils/DeliveryValidation');
 
 // =========================
 // Admin
 // =========================
 const AdminSchema = new Schema({
+  tokenVersion: { type: Number, default: 0 },
   _id: Schema.Types.ObjectId,
   username: String,
   password: String
@@ -30,6 +32,7 @@ const CategorySchema = new Schema({
 // Customer
 // =========================
 const CustomerSchema = new Schema({
+  tokenVersion: { type: Number, default: 0 },
   _id: Schema.Types.ObjectId,
   username: String,
   password: String,
@@ -47,6 +50,7 @@ const CustomerSchema = new Schema({
 // Staff
 // =========================
 const StaffSchema = new Schema({
+  tokenVersion: { type: Number, default: 0 },
   _id: Schema.Types.ObjectId,
   username: String,
   password: String,
@@ -179,6 +183,15 @@ const ItemSchema = new Schema({
 // Order
 // =========================
 const OrderSchema = new Schema({
+  checkoutIdempotencyKey: { type: String, select: false },
+  checkoutIntentHash: { type: String, select: false },
+  // Missing/false: legacy inventory is deducted on completion. No backfill.
+  // True: checkout already reserved inventory; only backend sets this flag.
+  stockReserved: { type: Boolean, default: false },
+  // Optional for historical orders; checkout requires date and slot for new orders.
+  deliveryDate: { type: String, validate: value => value == null || isCalendarDate(value) },
+  deliveryTimeSlot: { type: String, enum: DELIVERY_TIME_SLOTS },
+  cardMessage: { type: String, trim: true, maxlength: CARD_MESSAGE_LIMIT },
   _id: Schema.Types.ObjectId,
   cdate: Number,
   total: Number,
@@ -216,7 +229,11 @@ const OrderSchema = new Schema({
     type: Number,
     default: 0
   }
-}, { versionKey: false });
+}, { versionKey: false, autoIndex: false });
+OrderSchema.index({ 'customer._id': 1, checkoutIdempotencyKey: 1 }, {
+  name: 'checkout_customer_key_unique', unique: true,
+  partialFilterExpression: { checkoutIdempotencyKey: { $type: 'string' } }
+});
 
 // =========================
 // Review
@@ -294,8 +311,45 @@ const Voucher = mongoose.model('Voucher', VoucherSchema, 'vouchers');
 const Product = mongoose.model('Product', ProductSchema);
 const Order = mongoose.model('Order', OrderSchema);
 const Review = mongoose.model('Review', ReviewSchema);
+const SupportRequest = mongoose.model('SupportRequest', new Schema({
+  customerId: { type: Schema.Types.ObjectId, required: true },
+  orderId: { type: Schema.Types.ObjectId, default: null },
+  category: { type: String, enum: ['wrong_product', 'damaged_product', 'refund', 'delivery', 'payment', 'staff', 'order_change'], required: true },
+  customerMessage: { type: String, required: true, maxlength: 2000 },
+  status: { type: String, enum: ['pending', 'in_progress', 'resolved'], default: 'pending' },
+  source: { type: String, enum: ['ai_chat'], default: 'ai_chat' },
+  assignedTo: { type: new Schema({ id: Schema.Types.ObjectId, role: String, name: String }, { _id: false }), default: null },
+  resolvedAt: { type: Date, default: null },
+  resolvedBy: { type: new Schema({ id: Schema.Types.ObjectId, role: String, name: String }, { _id: false }), default: null },
+  chatSequence: { type: Number, default: 0 }
+}, { versionKey: false, timestamps: true }), 'supportrequests');
+const SupportMessageSchema = new Schema({
+  supportRequestId: { type: Schema.Types.ObjectId, required: true },
+  senderType: { type: String, enum: ['customer', 'staff', 'admin', 'system'], required: true },
+  senderId: { type: Schema.Types.ObjectId, required: true },
+  clientMessageId: { type: String, required: true, maxlength: 80 },
+  message: { type: String, required: true, trim: true, maxlength: 2000 },
+  sequence: { type: Number, required: true }
+}, { versionKey: false, timestamps: { createdAt: true, updatedAt: false } });
+SupportMessageSchema.index({ supportRequestId: 1, senderId: 1, senderType: 1, clientMessageId: 1 }, { unique: true });
+SupportMessageSchema.index({ supportRequestId: 1, sequence: 1 }, { unique: true });
+const SupportMessage = mongoose.model('SupportMessage', SupportMessageSchema);
+const AIConversationSchema = new Schema({
+  lastPolicyTopic: { type: String, enum: ['shopping', 'shipping', 'payment', 'returns', 'refund', 'cancellation', 'order_changes', 'contact', 'hours', 'voucher', null], default: null },
+  lastOrderId: { type: String, default: null },
+  _id: String,
+  owner: { type: String, default: null },
+  constraints: { type: new Schema({ keyword: String, occasion: String, color: String, recipient: String, style: String, flower: String, minPrice: Number, maxPrice: Number }, { _id: false }), default: {} },
+  productIds: { type: [String], default: [] },
+  selectedId: { type: String, default: null },
+  revision: { type: Number, default: 0 },
+  expiresAt: { type: Date, required: true }
+}, { versionKey: false, timestamps: true });
+AIConversationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+const AIConversation = mongoose.model('AIConversation', AIConversationSchema);
 
 module.exports = {
+  AIConversation,
   Admin,
   Category,
   Customer,
@@ -303,5 +357,7 @@ module.exports = {
   Voucher,
   Product,
   Order,
-  Review
+  Review,
+  SupportRequest,
+  SupportMessage
 };

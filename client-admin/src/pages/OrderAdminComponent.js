@@ -2,6 +2,34 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import API from '../services/api';
 import LayoutComponent from '../components/LayoutComponent';
 
+// Display policy only; every update is validated again by the backend.
+const nextStatuses = {
+  pending: ['approved', 'canceled'],
+  approved: ['preparing', 'canceled'],
+  preparing: ['delivering'],
+  delivering: ['completed'],
+  completed: [],
+  canceled: []
+};
+
+const canSelectStatus = (from, to) =>
+  from === to ||
+  (nextStatuses[from] || []).includes(to);
+
+const normalizeStatus = (status) =>
+  String(status || '').toLowerCase();
+
+const isCanceledOrder = (orderOrStatus) => {
+  if (typeof orderOrStatus === 'string') {
+    return normalizeStatus(orderOrStatus) === 'canceled';
+  }
+
+  return (
+    normalizeStatus(orderOrStatus?.status) ===
+    'canceled'
+  );
+};
+
 function OrderAdminComponent() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,16 +64,6 @@ function OrderAdminComponent() {
     setSortBy('newest');
     localStorage.removeItem('adminOrderCustomerKeyword');
   };
-
-  const normalizeStatus = (status) => String(status || '').toLowerCase();
-
-  const isCanceledOrder = (orderOrStatus) => {
-    if (typeof orderOrStatus === 'string') {
-      return normalizeStatus(orderOrStatus) === 'canceled';
-    }
-    return normalizeStatus(orderOrStatus?.status) === 'canceled';
-  };
-
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
@@ -191,8 +209,8 @@ function OrderAdminComponent() {
         return;
       }
 
-      if (currentStatus === 'canceled') {
-        alert('Đơn hàng đã hủy không thể cập nhật trạng thái nữa.');
+      if (!canSelectStatus(currentStatus, newStatus)) {
+        alert('Không thể chuyển trạng thái đơn hàng theo yêu cầu.');
         return;
       }
 
@@ -230,10 +248,10 @@ function OrderAdminComponent() {
       }
 
       const selectedOrders = orders.filter((order) => selectedIds.includes(order._id));
-      const canceledOrders = selectedOrders.filter((order) => isCanceledOrder(order));
+      const canceledOrders = selectedOrders.filter((order) => !canSelectStatus(normalizeStatus(order.status), bulkStatus));
 
       if (canceledOrders.length > 0) {
-        alert('Trong danh sách đã chọn có đơn đã hủy. Vui lòng bỏ chọn các đơn đã hủy.');
+        alert('Có đơn không thể chuyển sang trạng thái đã chọn. Vui lòng kiểm tra lại.');
         return;
       }
 
@@ -735,12 +753,12 @@ WIND FLOWER`;
             <span>Đã chọn: {selectedIds.length}</span>
 
             <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
-              <option value="pending">Chờ xác nhận</option>
-              <option value="approved">Đã xác nhận</option>
-              <option value="preparing">Đang chuẩn bị</option>
-              <option value="delivering">Đang giao hàng</option>
-              <option value="completed">Hoàn thành</option>
-              <option value="canceled">Đã hủy</option>
+              <option value="pending" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "pending"))}>Chờ xác nhận</option>
+              <option value="approved" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "approved"))}>Đã xác nhận</option>
+              <option value="preparing" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "preparing"))}>Đang chuẩn bị</option>
+              <option value="delivering" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "delivering"))}>Đang giao hàng</option>
+              <option value="completed" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "completed"))}>Hoàn thành</option>
+              <option value="canceled" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "canceled"))}>Đã hủy</option>
             </select>
 
             <button onClick={handleBulkUpdateStatus}>Cập nhật hàng loạt</button>
@@ -869,12 +887,15 @@ WIND FLOWER`;
                       </div>
 
                       <div className="admin-order-info-grid">
+                        <p><strong>Ngày giao hoa:</strong> {order.deliveryDate || '—'}</p>
+                        <p><strong>Khung giờ giao mong muốn:</strong> {order.deliveryTimeSlot || '—'}</p>
+                        <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}><strong>Lời nhắn thiệp:</strong> {order.cardMessage || '—'}</p>
                         <p><strong>Địa chỉ:</strong> {customerAddress || 'Chưa có'}</p>
                         <p><strong>Phương thức thanh toán:</strong> {formatPaymentMethod(paymentMethod)}</p>
-                        <p><strong>Trạng thái thanh toán:</strong> {order.paymentStatus || 'Chưa có'}</p>
+                        <p><strong>Trạng thái thanh toán:</strong> {order.paymentStatus === 'Đã thanh toán demo' ? 'Thanh toán demo - chưa xác minh (dữ liệu cũ)' : order.paymentStatus || 'Chưa có'}</p>
                         <p><strong>Tổng tiền:</strong> {formatMoney(order.total)}</p>
                         <p><strong>Mã giảm giá:</strong> {order.voucherCode || 'Không có'}</p>
-                        <p><strong>Lời nhắn:</strong> {noteText || 'Không có'}</p>
+                        <p><strong>Ghi chú cho shop:</strong> {noteText || 'Không có'}</p>
                         <p><strong>Email khách:</strong> {customerEmail || 'Chưa có'}</p>
                       </div>
 
@@ -917,19 +938,19 @@ WIND FLOWER`;
                         <select
                           value={selectedStatuses[order._id] || order.status || 'pending'}
                           onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                          disabled={isCanceled}
+                          disabled={!(nextStatuses[normalizeStatus(order.status)] || []).length}
                         >
-                          <option value="pending">Chờ xác nhận</option>
-                          <option value="approved">Đã xác nhận</option>
-                          <option value="preparing">Đang chuẩn bị</option>
-                          <option value="delivering">Đang giao hàng</option>
-                          <option value="completed">Hoàn thành</option>
-                          <option value="canceled">Đã hủy</option>
+                          <option value="pending" disabled={!canSelectStatus(normalizeStatus(order.status), "pending")}>Chờ xác nhận</option>
+                          <option value="approved" disabled={!canSelectStatus(normalizeStatus(order.status), "approved")}>Đã xác nhận</option>
+                          <option value="preparing" disabled={!canSelectStatus(normalizeStatus(order.status), "preparing")}>Đang chuẩn bị</option>
+                          <option value="delivering" disabled={!canSelectStatus(normalizeStatus(order.status), "delivering")}>Đang giao hàng</option>
+                          <option value="completed" disabled={!canSelectStatus(normalizeStatus(order.status), "completed")}>Hoàn thành</option>
+                          <option value="canceled" disabled={!canSelectStatus(normalizeStatus(order.status), "canceled")}>Đã hủy</option>
                         </select>
 
                         <button
                           onClick={() => handleSaveStatus(order._id)}
-                          disabled={isCanceled}
+                          disabled={!(nextStatuses[normalizeStatus(order.status)] || []).length}
                           style={{
                             opacity: isCanceled ? 0.6 : 1,
                             cursor: isCanceled ? 'not-allowed' : 'pointer'

@@ -1,0 +1,413 @@
+/* =====================================================
+   WIND FLOWER - SHARED PRICE FILTER
+===================================================== */
+
+.wf-price-filter {
+  position: relative;
+
+  width: 100%;
+  max-width: 520px;
+
+  z-index: 20;
+}
+
+/* =====================================================
+   TRIGGER
+===================================================== */
+
+.wf-price-filter-trigger {
+  width: 100%;
+  min-height: 58px;
+
+  display: grid;
+
+  grid-template-columns:
+    38px
+    minmax(0, 1fr)
+    28px;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 8px 12px;
+
+  border:
+    2px solid
+    rgba(
+      216,
+      27,
+      96,
+      0.42
+    );
+
+  border-radius: 15px;
+
+  background: #ffffff;
+
+  color: #18181f;
+
+  text-align: left;
+
+  box-shadow:
+    0 6px 18px
+    rgba(
+      0,
+      0,
+      0,
+      0.06
+    );
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.wf-price-filter-trigger:hover {
+  border-color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  box-shadow:
+    0 8px 22px
+    rgba(
+      216,
+      27,
+      96,
+      0.12
+    );
+}
+
+.wf-price-filter.is-open
+.wf-price-filter-trigger {
+  border-color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  box-shadow:
+    0 0 0 4px
+      rgba(
+        216,
+        27,
+        96,
+        0.09
+      ),
+    0 10px 24px
+      rgba(
+        0,
+        0,
+        0,
+        0.1
+      );
+}
+
+/* =====================================================
+   ICON
+===================================================== */
+
+.wf-price-filter-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff3b8a 0%,
+      #d81b60 55%,
+      #8f0038 100%
+    );
+
+  color: #ffffff;
+
+  font-size: 20px;
+  font-weight: 800;
+
+  line-height: 1;
+}
+
+/* =====================================================
+   TEXT
+===================================================== */
+
+.wf-price-filter-trigger-text {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.wf-price-filter-title {
+  color: #17171d;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  line-height: 1.3;
+}
+
+.wf-price-filter-current {
+  color: #6b6470;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  line-height: 1.4;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+/* =====================================================
+   ARROW
+===================================================== */
+
+.wf-price-filter-arrow {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 20px;
+
+  transition:
+    transform 0.2s ease;
+}
+
+.wf-price-filter.is-open
+.wf-price-filter-arrow {
+  transform:
+    rotate(180deg);
+}
+
+/* =====================================================
+   DROPDOWN
+===================================================== */
+
+.wf-price-filter-menu {
+  position: absolute;
+
+  top:
+    calc(100% + 8px);
+
+  left: 0;
+  right: 0;
+
+  z-index: 100;
+
+  overflow: hidden;
+
+  padding: 7px;
+
+  border:
+    1px solid
+    rgba(
+      216,
+      27,
+      96,
+      0.16
+    );
+
+  border-radius: 15px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 18px 42px
+    rgba(
+      0,
+      0,
+      0,
+      0.17
+    );
+}
+
+.wf-price-filter-menu-head {
+  padding:
+    8px 10px 10px;
+
+  color: #8e7a84;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 1px;
+
+  text-transform: uppercase;
+}
+
+/* =====================================================
+   OPTIONS
+===================================================== */
+
+.wf-price-filter-option {
+  width: 100%;
+  min-height: 44px;
+
+  display: grid;
+
+  grid-template-columns:
+    24px
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 10px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: transparent;
+
+  color: #27232a;
+
+  text-align: left;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.wf-price-filter-option:hover {
+  background: #fff0f6;
+
+  color:
+    var(
+      --decade-pink-dark,
+      #a00044
+    );
+}
+
+.wf-price-filter-option.is-active {
+  background: #ffe3ef;
+
+  color:
+    var(
+      --decade-pink-dark,
+      #a00044
+    );
+
+  font-weight: 800;
+}
+
+.wf-price-filter-check {
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  color:
+    var(
+      --decade-pink,
+      #d81b60
+    );
+
+  font-size: 15px;
+  font-weight: 900;
+}
+
+/* =====================================================
+   ACCESSIBILITY
+===================================================== */
+
+.wf-price-filter-trigger:focus-visible,
+.wf-price-filter-option:focus-visible {
+  outline:
+    3px solid
+    rgba(
+      216,
+      27,
+      96,
+      0.32
+    );
+
+  outline-offset: 2px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 768px) {
+  .wf-price-filter {
+    max-width: none;
+  }
+
+  .wf-price-filter-trigger {
+    min-height: 56px;
+
+    grid-template-columns:
+      36px
+      minmax(0, 1fr)
+      24px;
+
+    padding:
+      7px 10px;
+
+    border-radius: 14px;
+  }
+
+  .wf-price-filter-icon {
+    width: 34px;
+    height: 34px;
+
+    font-size: 18px;
+  }
+
+  .wf-price-filter-title {
+    font-size: 13px;
+  }
+
+  .wf-price-filter-current {
+    font-size: 11px;
+  }
+
+  .wf-price-filter-menu {
+    top:
+      calc(100% + 6px);
+
+    border-radius: 13px;
+  }
+
+  .wf-price-filter-option {
+    min-height: 46px;
+
+    font-size: 13px;
+  }
+}

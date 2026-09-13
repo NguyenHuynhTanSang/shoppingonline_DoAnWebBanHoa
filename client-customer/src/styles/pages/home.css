@@ -1,0 +1,1004 @@
+/* =====================================================
+   WIND FLOWER - HOME PAGE
+===================================================== */
+
+.wind-home-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.home-page.wind-home-page {
+  padding: 28px 0 0;
+}
+
+.wind-home-page .home-banner-link {
+  display: block;
+}
+
+
+/* =====================================================
+   HERO CAROUSEL
+===================================================== */
+
+.wind-home-hero-section {
+  padding: 18px 0 10px;
+}
+
+.wind-home-carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1916 / 821;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #f9e9ee;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.15);
+  touch-action: pan-y;
+}
+
+.wind-home-carousel-slide {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  animation: wind-home-banner-enter 0.55s ease;
+}
+
+.wind-home-carousel-image {
+  display: block;
+  width: 100%;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0 !important;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@keyframes wind-home-banner-enter {
+  from {
+    opacity: 0.15;
+    transform: scale(1.008);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* =====================================================
+   CAROUSEL ARROWS
+===================================================== */
+
+.wind-home-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+
+  width: 46px;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transform: translateY(-50%);
+
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 13px;
+
+  background: rgba(20, 16, 20, 0.4);
+  color: #ffffff;
+
+  font-family: Arial, sans-serif;
+  font-size: 43px;
+  font-weight: 300;
+  line-height: 1;
+
+  cursor: pointer;
+  opacity: 0.82;
+
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.wind-home-carousel-arrow:hover {
+  opacity: 1;
+  background: rgba(216, 27, 96, 0.88);
+}
+
+.wind-home-carousel-arrow:active {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.wind-home-carousel-arrow-left {
+  left: 16px;
+}
+
+.wind-home-carousel-arrow-right {
+  right: 16px;
+}
+
+
+/* =====================================================
+   CAROUSEL DOTS
+===================================================== */
+
+.wind-home-carousel-dots {
+  position: absolute;
+  z-index: 5;
+
+  left: 50%;
+  bottom: 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+  padding: 7px 10px;
+
+  transform: translateX(-50%);
+
+  border-radius: 999px;
+
+  background: rgba(20, 16, 20, 0.34);
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.wind-home-carousel-dot {
+  width: 9px;
+  height: 9px;
+
+  flex: 0 0 auto;
+
+  padding: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.45);
+
+  cursor: pointer;
+
+  transition:
+    width 0.22s ease,
+    border-radius 0.22s ease,
+    background 0.22s ease,
+    transform 0.22s ease;
+}
+
+.wind-home-carousel-dot:hover {
+  transform: scale(1.15);
+  background: #ffffff;
+}
+
+.wind-home-carousel-dot.active {
+  width: 28px;
+
+  border-radius: 999px;
+  border-color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff5b9a,
+      #d81b60
+    );
+}
+
+
+/* =====================================================
+   CAROUSEL FOCUS
+===================================================== */
+
+.wind-home-carousel-slide:focus-visible,
+.wind-home-carousel-arrow:focus-visible,
+.wind-home-carousel-dot:focus-visible {
+  outline: 3px solid rgba(216, 27, 96, 0.5);
+  outline-offset: 3px;
+}
+
+
+/* =====================================================
+   QUICK CATEGORIES
+===================================================== */
+
+.wind-home-category-section {
+  padding: 30px 0 26px;
+}
+
+.wind-home-category-heading {
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.wind-home-category-heading > span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #d81b60;
+
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+
+  text-transform: uppercase;
+}
+
+.wind-home-category-heading h2 {
+  margin: 0;
+
+  color: #17171d;
+
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.wind-home-category-list {
+  width: 100%;
+
+  display: flex;
+  justify-content: center;
+
+  gap: 28px;
+
+  flex-wrap: wrap;
+}
+
+.wind-home-category-item {
+  width: 160px;
+
+  display: block;
+
+  color: #19191f;
+
+  text-align: center;
+  text-decoration: none;
+}
+
+.wind-home-category-image-wrap {
+  width: 148px;
+  height: 148px;
+
+  margin: 0 auto;
+  padding: 4px;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff7bac,
+      #d81b60,
+      #7d0031
+    );
+
+  box-shadow: 0 9px 24px rgba(0, 0, 0, 0.13);
+
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.wind-home-category-item
+.wind-home-category-image-wrap
+img {
+  display: block;
+
+  width: 100% !important;
+  height: 100% !important;
+
+  object-fit: cover;
+
+  border: 4px solid #ffffff !important;
+  border-radius: 50%;
+
+  box-shadow: none !important;
+}
+
+.wind-home-category-item:hover
+.wind-home-category-image-wrap {
+  transform: translateY(-4px);
+
+  box-shadow:
+    0 13px 29px
+    rgba(216, 27, 96, 0.18);
+}
+
+.wind-home-category-item p {
+  margin: 12px 0 0 !important;
+
+  color: #1a1a20;
+
+  font-size: 15px !important;
+  font-weight: 700 !important;
+
+  line-height: 1.35;
+}
+
+
+/* =====================================================
+   HOME PRODUCT SECTIONS
+===================================================== */
+
+.wind-home-page .home-product-section {
+  width: 100%;
+  min-width: 0;
+
+  padding: 28px 0 8px;
+}
+
+.wind-home-page .section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 18px;
+}
+
+.wind-home-page .section-head h2 {
+  position: relative;
+
+  margin: 0;
+
+  color: #13131a;
+
+  font-size: 34px;
+  font-weight: 800;
+
+  letter-spacing: 0.2px;
+}
+
+.wind-home-page .section-head h2::after {
+  content: "";
+
+  display: block;
+
+  width: 72px;
+  height: 4px;
+
+  margin-top: 10px;
+
+  border-radius: 999px;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a 0%,
+        #d81b60 50%,
+        #8f0038 100%
+      )
+    );
+}
+
+.wind-home-page .section-more-btn {
+  flex-shrink: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 12px 24px;
+
+  border: none;
+  border-radius: 999px;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a 0%,
+        #d81b60 50%,
+        #8f0038 100%
+      )
+    );
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  text-decoration: none;
+
+  box-shadow:
+    0 6px 14px
+    rgba(216, 27, 96, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.wind-home-page .section-more-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.wind-home-page .no-products-text {
+  margin-top: 10px;
+
+  color: #666666;
+
+  font-size: 16px;
+}
+
+.wind-home-page .home-product-grid {
+  width: 100%;
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    ) !important;
+
+  gap: 24px;
+
+  align-items: stretch;
+}
+
+
+/* =====================================================
+   HOME REVIEWS
+===================================================== */
+
+.wind-home-page .review-section {
+  padding: 40px 0 50px;
+}
+
+.wind-home-page .review-section h2 {
+  position: relative;
+
+  margin: 0 0 22px;
+
+  color: #13131a;
+
+  font-size: 42px;
+  font-weight: 800;
+
+  letter-spacing: 0.2px;
+}
+
+.wind-home-page .review-section h2::after {
+  content: "";
+
+  display: block;
+
+  width: 72px;
+  height: 4px;
+
+  margin-top: 10px;
+
+  border-radius: 999px;
+
+  background:
+    var(
+      --decade-gradient,
+      linear-gradient(
+        135deg,
+        #ff3b8a 0%,
+        #d81b60 50%,
+        #8f0038 100%
+      )
+    );
+}
+
+.wind-home-page .review-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 22px;
+}
+
+.wind-home-page .review-card {
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    140px minmax(0, 1fr);
+
+  gap: 18px;
+
+  padding: 18px;
+
+  border:
+    1px solid
+    rgba(20, 20, 28, 0.06);
+
+  border-left:
+    5px solid
+    var(--decade-pink, #d81b60);
+
+  border-radius: 16px;
+
+  background: #ffffff;
+
+  box-shadow:
+    var(
+      --decade-shadow,
+      0 10px 28px rgba(0, 0, 0, 0.12)
+    );
+}
+
+.wind-home-page .review-image {
+  min-width: 0;
+}
+
+.wind-home-page .review-image img {
+  display: block;
+
+  width: 140px;
+  height: 140px;
+
+  object-fit: cover;
+
+  border-radius: 9px;
+}
+
+.wind-home-page .review-content {
+  min-width: 0;
+}
+
+.wind-home-page .review-content p {
+  margin: 0 0 14px;
+
+  color: #1b1b22;
+
+  font-size: 20px;
+
+  line-height: 1.5;
+
+  overflow-wrap: anywhere;
+}
+
+.wind-home-page .review-content span {
+  color: #666666;
+
+  font-size: 16px;
+  font-weight: 600;
+}
+
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 1200px) {
+  .wind-home-page .home-product-grid {
+    grid-template-columns:
+      repeat(
+        4,
+        minmax(0, 1fr)
+      ) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .wind-home-carousel {
+    border-radius: 18px;
+  }
+
+  .wind-home-carousel-arrow {
+    width: 42px;
+    height: 52px;
+
+    font-size: 37px;
+  }
+
+  .wind-home-carousel-arrow-left {
+    left: 12px;
+  }
+
+  .wind-home-carousel-arrow-right {
+    right: 12px;
+  }
+
+  .wind-home-category-list {
+    gap: 20px;
+  }
+
+  .wind-home-category-item {
+    width: 135px;
+  }
+
+  .wind-home-category-image-wrap {
+    width: 125px;
+    height: 125px;
+  }
+
+  .wind-home-page .home-product-grid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      ) !important;
+
+    gap: 18px;
+  }
+}
+
+@media (max-width: 992px) {
+  .wind-home-page .review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wind-home-page .review-card {
+    grid-template-columns:
+      140px minmax(0, 1fr);
+  }
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 768px) {
+  .wind-home-page > .container {
+    width: 100%;
+
+    max-width:
+      calc(100% - 24px);
+  }
+
+  /* HERO */
+
+  .wind-home-hero-section {
+    padding: 16px 0 8px;
+  }
+
+  .wind-home-carousel {
+    border-radius: 14px;
+
+    box-shadow:
+      0 9px 24px
+      rgba(0, 0, 0, 0.12);
+  }
+
+  .wind-home-carousel-arrow {
+    width: 32px;
+    height: 42px;
+
+    border-radius: 9px;
+
+    background:
+      rgba(20, 16, 20, 0.34);
+
+    font-size: 29px;
+  }
+
+  .wind-home-carousel-arrow-left {
+    left: 7px;
+  }
+
+  .wind-home-carousel-arrow-right {
+    right: 7px;
+  }
+
+  .wind-home-carousel-dots {
+    bottom: 7px;
+
+    gap: 5px;
+
+    padding: 5px 7px;
+  }
+
+  .wind-home-carousel-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .wind-home-carousel-dot.active {
+    width: 18px;
+  }
+
+  /* QUICK CATEGORIES */
+
+  .wind-home-category-section {
+    padding: 22px 0 18px;
+  }
+
+  .wind-home-category-heading {
+    margin-bottom: 15px;
+
+    text-align: left;
+  }
+
+  .wind-home-category-heading > span {
+    font-size: 9px;
+  }
+
+  .wind-home-category-heading h2 {
+    font-size: 21px;
+  }
+
+  .wind-home-category-list {
+    width: 100%;
+
+    display: flex !important;
+
+    justify-content:
+      flex-start !important;
+
+    flex-wrap:
+      nowrap !important;
+
+    gap:
+      13px !important;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding:
+      3px 2px 10px;
+
+    scroll-snap-type:
+      x proximity;
+
+    overscroll-behavior-inline:
+      contain;
+
+    scrollbar-width: none;
+
+    -webkit-overflow-scrolling:
+      touch;
+  }
+
+  .wind-home-category-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wind-home-category-item {
+    flex:
+      0 0 92px;
+
+    width:
+      92px !important;
+
+    scroll-snap-align:
+      start;
+  }
+
+  .wind-home-category-image-wrap {
+    width: 82px;
+    height: 82px;
+
+    padding: 3px;
+  }
+
+  .wind-home-category-item
+  .wind-home-category-image-wrap
+  img {
+    border-width:
+      3px !important;
+  }
+
+  .wind-home-category-item p {
+    margin-top:
+      8px !important;
+
+    font-size:
+      11px !important;
+  }
+
+  /* PRODUCT GRID */
+
+  .wind-home-page .home-product-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+
+    gap:
+      12px !important;
+  }
+
+  .wind-home-page .section-head {
+    margin-bottom: 14px;
+  }
+
+  .wind-home-page .section-head h2 {
+    font-size: 24px;
+  }
+
+  .wind-home-page .section-more-btn {
+    padding: 10px 17px;
+
+    font-size: 12px;
+  }
+
+  /* REVIEWS */
+
+  .wind-home-page .review-section {
+    padding: 30px 0 38px;
+  }
+
+  .wind-home-page .review-section h2 {
+    font-size: 28px;
+  }
+
+  .wind-home-page .review-grid {
+    gap: 14px;
+  }
+
+  .wind-home-page .review-card {
+    grid-template-columns: 110px minmax(0, 1fr);
+
+    gap: 13px;
+
+    padding: 13px;
+  }
+
+  .wind-home-page .review-image img {
+    width: 110px;
+    height: 110px;
+  }
+
+  .wind-home-page .review-content p {
+    margin-bottom: 8px;
+
+    font-size: 14px;
+  }
+
+  .wind-home-page .review-content span {
+    font-size: 12px;
+  }
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 576px) {
+  .wind-home-page .section-head {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 12px;
+  }
+
+  .wind-home-page .review-card {
+    grid-template-columns: 1fr;
+  }
+
+  .wind-home-page .review-image img {
+    width: 100%;
+    height: 200px;
+  }
+}
+
+
+/* =====================================================
+   iPHONE ~390px
+===================================================== */
+
+@media (max-width: 480px) {
+  .wind-home-page > .container {
+    max-width:
+      calc(100% - 20px);
+  }
+
+  .wind-home-carousel {
+    border-radius: 12px;
+  }
+
+  .wind-home-carousel-arrow {
+    width: 28px;
+    height: 36px;
+
+    font-size: 25px;
+  }
+
+  .wind-home-carousel-arrow-left {
+    left: 5px;
+  }
+
+  .wind-home-carousel-arrow-right {
+    right: 5px;
+  }
+
+  .wind-home-carousel-dots {
+    bottom: 5px;
+  }
+
+  .wind-home-category-heading h2 {
+    font-size: 20px;
+  }
+
+  .wind-home-category-item {
+    flex-basis: 88px;
+
+    width:
+      88px !important;
+  }
+
+  .wind-home-category-image-wrap {
+    width: 78px;
+    height: 78px;
+  }
+
+  .wind-home-page .review-image img {
+    height: 180px;
+  }
+}
+
+
+/* =====================================================
+   VERY SMALL MOBILE
+===================================================== */
+
+@media (max-width: 350px) {
+  .wind-home-carousel-arrow {
+    width: 25px;
+    height: 32px;
+
+    font-size: 22px;
+  }
+
+  .wind-home-carousel-dots {
+    gap: 4px;
+  }
+
+  .wind-home-page .home-product-grid {
+    grid-template-columns:
+      1fr !important;
+
+    gap:
+      16px !important;
+  }
+
+  .wind-home-page .section-head h2 {
+    font-size: 22px;
+  }
+
+  .wind-home-page .review-image img {
+    height: 165px;
+  }
+}
+
+
+/* =====================================================
+   REDUCED MOTION
+===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .wind-home-carousel-slide {
+    animation: none;
+  }
+
+  .wind-home-carousel-dot,
+  .wind-home-carousel-arrow {
+    transition: none;
+  }
+}

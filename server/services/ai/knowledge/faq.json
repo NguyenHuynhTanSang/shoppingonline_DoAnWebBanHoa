@@ -1,0 +1,402 @@
+{
+  "reviewedAt": "2026-09-06",
+  "fallback": "Mình chưa có thông tin xác nhận về chính sách này. Bạn có thể yêu cầu gặp nhân viên Wind Flower để được hỗ trợ nhé.",
+  "topics": [
+    {
+      "id": "hours",
+      "isActive": true,
+      "keywords": [
+        "gio mo",
+        "mo cua",
+        "dong cua",
+        "gio hoat dong",
+        "gio lam viec",
+        "chu nhat",
+        "ngay le"
+      ],
+      "answer": "Theo trang Liên hệ, giờ làm việc được công bố là 8h30 - 21h00 mỗi ngày. Chưa có thông tin xác nhận lịch ngoại lệ vào ngày lễ.",
+      "sources": [
+        "client-customer/src/components/ContactComponent.js",
+        "client-customer/src/components/InformComponent.js"
+      ],
+      "category": "hours",
+      "title": "hours"
+    },
+    {
+      "id": "contact",
+      "isActive": true,
+      "keywords": [
+        "lien he",
+        "hotline",
+        "dien thoai",
+        "email",
+        "dia chi",
+        "cua hang o dau",
+        "shop o dau"
+      ],
+      "answer": "Trang Liên hệ hiện công bố hotline 093.130.3836, email flowershop@gmail.com và địa chỉ 123 Nguyễn Văn A, Quận 1, TP.HCM. Đây là thông tin đang hiển thị trên website; chưa có xác minh ngoài project.",
+      "sources": [
+        "client-customer/src/components/ContactComponent.js",
+        "client-customer/src/components/InformComponent.js"
+      ],
+      "category": "contact",
+      "title": "contact"
+    },
+    {
+      "id": "voucher",
+      "isActive": true,
+      "keywords": [
+        "voucher",
+        "ma giam",
+        "khuyen mai",
+        "uu dai"
+      ],
+      "answer": "Bạn nhập mã voucher tại giỏ hàng. Backend kiểm tra mã tồn tại, đang hoạt động, thời gian áp dụng, giá trị đơn tối thiểu và lượt sử dụng còn lại. Mức giảm theo cấu hình từng mã. Chưa có thông tin xác nhận mã cụ thể hiện dùng được trong FAQ; vui lòng kiểm tra tại giỏ hàng/checkout.",
+      "sources": [
+        "server/api/customer.js#validateVoucherForSubtotal",
+        "server/api/customer.js#calculateDiscountFromVoucher",
+        "client-customer/src/components/CheckoutComponent.js"
+      ],
+      "category": "voucher",
+      "title": "voucher"
+    },
+    {
+      "id": "shopping.guide",
+      "category": "shopping",
+      "title": "Hướng dẫn mua hàng",
+      "keywords": [
+        "huong dan mua",
+        "cach dat hoa",
+        "loi nhan thiep",
+        "ngay giao"
+      ],
+      "answer": "Bạn chọn hoa, kiểm tra giỏ hàng và áp dụng voucher nếu có, rồi nhập người nhận, ngày giao, khung giờ mong muốn và phương thức thanh toán. Lời nhắn thiệp gửi người nhận tách riêng ghi chú cho shop. Kiểm tra summary trước khi xác nhận đặt hàng; theo dõi tại Đơn hàng của tôi.",
+      "sources": [
+        "client-customer/src/components/GuideComponent.js"
+      ],
+      "priority": 1,
+      "isActive": true
+    },
+    {
+      "id": "shipping.fee",
+      "category": "shipping",
+      "title": "Phí giao hàng",
+      "keywords": [
+        "phi ship",
+        "ship bao nhieu",
+        "phi giao",
+        "phi van chuyen",
+        "shipping",
+        "giao hang",
+        "giao hoa"
+      ],
+      "answer": "Phí giao hàng là {{shippingFee}}, miễn phí khi tiền sản phẩm sau giảm giá sản phẩm và trước voucher từ {{freeShippingThreshold}}. Kiểm tra phí vận chuyển và tổng cộng tại checkout.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 1,
+      "isActive": true
+    },
+    {
+      "id": "shipping.free_shipping",
+      "category": "shipping",
+      "title": "Miễn phí giao hàng",
+      "keywords": [
+        "mien ship",
+        "mien phi",
+        "free ship",
+        "free shipping"
+      ],
+      "answer": "Miễn phí giao hàng khi tiền sản phẩm sau giảm giá sản phẩm, trước voucher từ {{freeShippingThreshold}}; dưới ngưỡng này phí là {{shippingFee}}.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 2,
+      "isActive": true
+    },
+    {
+      "id": "shipping.area",
+      "category": "shipping",
+      "title": "Phạm vi giao hàng",
+      "keywords": [
+        "pham vi",
+        "khu vuc",
+        "giao tinh",
+        "toan quoc",
+        "giao o dau",
+        "giao ngoai"
+      ],
+      "answer": "Phạm vi phục vụ chính là TP.HCM. Với địa chỉ ngoài phạm vi này, vui lòng liên hệ Wind Flower kiểm tra khả năng hỗ trợ trước khi đặt hàng.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 3,
+      "isActive": true
+    },
+    {
+      "id": "shipping.same_day",
+      "category": "shipping",
+      "title": "Giao trong ngày",
+      "keywords": [
+        "giao trong ngay",
+        "giao hom nay",
+        "trong ngay",
+        "giao gap"
+      ],
+      "answer": "Wind Flower có thể hỗ trợ giao trong ngày với đơn đặt trước {{cutoff}} (giờ Việt Nam); từ {{cutoff}}, ngày giao sớm nhất là ngày tiếp theo. Cần shop xác nhận khả năng phục vụ, không cam kết giao trong ngày. Bộ chọn ngày hiện chưa tự áp dụng cutoff này.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 4,
+      "isActive": true
+    },
+    {
+      "id": "shipping.cutoff",
+      "category": "shipping",
+      "title": "Mốc nhận đơn giao cùng ngày",
+      "keywords": [
+        "cutoff",
+        "dat may gio",
+        "khong giao hom nay",
+        "khong nhan giao hom nay",
+        "sau 15",
+        "truoc 15"
+      ],
+      "answer": "Mốc giao cùng ngày là {{cutoff}} (giờ Việt Nam): đơn đặt trước mốc này có thể được hỗ trợ giao trong ngày; từ mốc này, ngày sớm nhất là ngày tiếp theo. Khả năng phục vụ cần được shop xác nhận; checkout chưa tự chặn theo cutoff.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 5,
+      "isActive": true
+    },
+    {
+      "id": "shipping.time_slots",
+      "category": "shipping",
+      "title": "Khung giờ giao mong muốn",
+      "keywords": [
+        "khung gio",
+        "giao dung",
+        "gio chinh xac",
+        "giao luc"
+      ],
+      "answer": "Các khung giờ giao mong muốn hiện có: {{timeSlots}}. Wind Flower sẽ cố gắng giao trong khung giờ bạn chọn, không cam kết giờ giao chính xác.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 6,
+      "isActive": true
+    },
+    {
+      "id": "shipping.processing",
+      "category": "shipping",
+      "title": "Thời gian xử lý",
+      "keywords": [
+        "giao may ngay",
+        "giao hang trong bao lau",
+        "giao hang mat bao lau",
+        "bao lau nhan duoc hoa",
+        "giao trong 2 gio",
+        "giao hang trong 2 gio"
+      ],
+      "answer": "Chưa có thông tin xác nhận về thời lượng chuẩn bị hoặc thời gian giao tối đa. Vui lòng liên hệ Wind Flower kiểm tra cho dịp cần giao.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 7,
+      "isActive": true
+    },
+    {
+      "id": "shipping.recipient_absent",
+      "category": "shipping",
+      "title": "Người nhận vắng mặt",
+      "keywords": [
+        "khong goi duoc",
+        "khong lien he duoc",
+        "vang mat",
+        "khong co mat",
+        "de hoa truoc cua"
+      ],
+      "answer": "Nếu không liên hệ được người nhận, Wind Flower liên hệ người đặt để thống nhất phương án. Shop không tự để hoa trước cửa hoặc giao bên thứ ba khi chưa được đồng ý.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 8,
+      "isActive": true
+    },
+    {
+      "id": "shipping.redelivery",
+      "category": "shipping",
+      "title": "Giao lại",
+      "keywords": [
+        "giao lai"
+      ],
+      "answer": "Nếu phải giao lại do thông tin sai hoặc không liên hệ được người nhận, có thể phát sinh phí giao lại {{shippingFee}}. Nếu lỗi do Wind Flower, không thu thêm phí giao lại; shop liên hệ người đặt để thống nhất cách xử lý.",
+      "sources": [
+        "client-customer/src/components/ShippingPolicyComponent.js"
+      ],
+      "priority": 9,
+      "isActive": true
+    },
+    {
+      "id": "payment.cod",
+      "category": "payment",
+      "title": "Thanh toán COD",
+      "keywords": [
+        "cod",
+        "tra tien khi nhan",
+        "thanh toan khi nhan",
+        "tien mat"
+      ],
+      "answer": "Checkout có thanh toán khi nhận hàng (COD). Trang thanh toán nêu tiền mặt tại cửa hàng hoặc khi nhận với đơn đủ điều kiện, chưa công bố chi tiết điều kiện; bạn có thể liên hệ shop xác nhận.",
+      "sources": [
+        "client-customer/src/components/PaymentPolicyComponent.js"
+      ],
+      "priority": 1,
+      "isActive": true
+    },
+    {
+      "id": "payment.methods",
+      "category": "payment",
+      "title": "Phương thức thanh toán",
+      "keywords": [
+        "thanh toan",
+        "chuyen khoan",
+        "ngan hang",
+        "tai khoan",
+        "momo",
+        "the tin dung"
+      ],
+      "answer": "Checkout có COD. Chuyển khoản ngân hàng và MoMo hiện chỉ là demo, chưa phải thanh toán hoặc hoàn tiền trực tuyến thực tế. Chưa có thông tin xác nhận về phương thức khác; vui lòng liên hệ Wind Flower khi cần kiểm tra thanh toán.",
+      "sources": [
+        "client-customer/src/components/PaymentPolicyComponent.js"
+      ],
+      "priority": 0,
+      "isActive": true
+    },
+    {
+      "id": "order.cancel",
+      "category": "cancellation",
+      "title": "Hủy đơn",
+      "keywords": [
+        "huy don"
+      ],
+      "answer": "Customer chỉ tự hủy đơn của mình khi đang chờ xác nhận. Khi Đã xác nhận, hãy liên hệ shop yêu cầu hủy trước khi bắt đầu chuẩn bị. Khi Đang chuẩn bị hoặc Đang giao hàng, shop kiểm tra khả năng hỗ trợ thực tế, không tự động hủy. Hủy đơn không đồng nghĩa đã hoàn tiền. Tool chỉ cung cấp chính sách, không hủy đơn.",
+      "sources": [
+        "client-customer/src/components/ReturnPolicyComponent.js"
+      ],
+      "priority": 1,
+      "isActive": true
+    },
+    {
+      "id": "order.change",
+      "category": "order_changes",
+      "title": "Thay đổi đơn",
+      "keywords": [
+        "doi dia chi",
+        "sua dia chi",
+        "thay doi don",
+        "doi ngay",
+        "doi gio",
+        "sua don",
+        "doi nguoi nhan",
+        "doi loi nhan"
+      ],
+      "answer": "Bạn có thể yêu cầu thay đổi người nhận, điện thoại, địa chỉ, ngày giao, khung giờ mong muốn, lời nhắn thiệp hoặc ghi chú trước khi bắt đầu chuẩn bị/giao. Sau đó shop kiểm tra khả năng điều chỉnh. Website chưa có tự sửa đơn; liên hệ Wind Flower để được xác nhận. AI không tự sửa địa chỉ hay đơn hàng.",
+      "sources": [
+        "client-customer/src/components/ReturnPolicyComponent.js"
+      ],
+      "priority": 1,
+      "isActive": true
+    },
+    {
+      "id": "returns.wrong_product",
+      "category": "returns",
+      "title": "Giao sai sản phẩm",
+      "keywords": [
+        "giao sai",
+        "sai mau",
+        "sai san pham",
+        "sai hoa"
+      ],
+      "answer": "Nếu nhận sai mẫu, vui lòng liên hệ Wind Flower sớm, cung cấp mã đơn nếu có và mô tả vấn đề. Cung cấp ảnh theo hướng dẫn nhân viên nếu cần; shop kiểm tra trường hợp cụ thể và hỗ trợ phương án phù hợp.",
+      "sources": [
+        "client-customer/src/components/ReturnPolicyComponent.js"
+      ],
+      "priority": 3,
+      "isActive": true
+    },
+    {
+      "id": "returns.missing_product",
+      "category": "returns",
+      "title": "Thiếu sản phẩm",
+      "keywords": [
+        "thieu san pham",
+        "giao thieu",
+        "thieu hoa"
+      ],
+      "answer": "Nếu nhận thiếu sản phẩm, vui lòng liên hệ Wind Flower sớm, cung cấp mã đơn nếu có và mô tả vấn đề để nhân viên kiểm tra, hỗ trợ phương án phù hợp.",
+      "sources": [
+        "client-customer/src/components/ReturnPolicyComponent.js"
+      ],
+      "priority": 2,
+      "isActive": true
+    },
+    {
+      "id": "returns.damaged_product",
+      "category": "returns",
+      "title": "Hoa hư hỏng",
+      "keywords": [
+        "hoa hu",
+        "hoa bi hu",
+        "hoa bi dap",
+        "dap nat",
+        "hu hong",
+        "doi tra",
+        "doi hoa",
+        "doi hang"
+      ],
+      "answer": "Nếu hoa hư hỏng rõ ràng khi nhận, vui lòng liên hệ Wind Flower sớm, cung cấp mã đơn nếu có, mô tả vấn đề và ảnh theo hướng dẫn nhân viên khi cần. Shop kiểm tra trường hợp cụ thể và hỗ trợ phương án phù hợp; chưa có cam kết tự động đổi mới hay hoàn tiền.",
+      "sources": [
+        "client-customer/src/components/ReturnPolicyComponent.js"
+      ],
+      "priority": 1,
+      "isActive": true
+    },
+    {
+      "id": "returns.change_of_mind",
+      "category": "returns",
+      "title": "Khách đổi ý",
+      "keywords": [
+        "doi y",
+        "khong muon nhan",
+        "doi mau"
+      ],
+      "answer": "Hoa tươi được chuẩn bị theo từng đơn. Wind Flower có thể không hỗ trợ đổi hoặc hủy khi đã bắt đầu chuẩn bị. Hãy liên hệ shop sớm để kiểm tra; đổi ý không đồng nghĩa đổi trả vô điều kiện.",
+      "sources": [
+        "client-customer/src/components/ReturnPolicyComponent.js"
+      ],
+      "priority": 4,
+      "isActive": true
+    },
+    {
+      "id": "refund.general",
+      "category": "refund",
+      "title": "Xem xét hoàn tiền",
+      "keywords": [
+        "hoan tien",
+        "refund",
+        "refunds",
+        "boi thuong"
+      ],
+      "answer": "Hoàn tiền cần nhân viên xác minh, phụ thuộc kết quả kiểm tra và phương thức thanh toán thực tế, không phải thao tác tự động. Chưa có thông tin xác nhận về tỷ lệ, bồi thường hoặc thời gian hoàn tiền. Liên hệ Wind Flower; AI không thực hiện hoàn tiền.",
+      "sources": [
+        "client-customer/src/components/ReturnPolicyComponent.js"
+      ],
+      "priority": 1,
+      "isActive": true
+    }
+  ],
+  "rules": {
+    "sameDayCutoff": "15:00"
+  }
+}

@@ -1,0 +1,13 @@
+.checkout-form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d7c6ce;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+.checkout-form-group select:focus-visible { outline: 2px solid #d81b60; outline-offset: 2px; }
+.checkout-form-group #delivery-slot-help,
+.checkout-form-group #card-message-count { font-size: 14px; color: #62515a; margin: 8px 0 18px; }
+.checkout-delivery-summary { padding: 16px; margin-bottom: 20px; background: #fff3f7; border-radius: 12px; overflow-wrap: anywhere; }
+.checkout-delivery-summary p { margin: 6px 0; white-space: pre-wrap; }

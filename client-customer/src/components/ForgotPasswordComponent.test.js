@@ -20,7 +20,7 @@ test.each([false, true])('forgot ignores reset link in response, failure=%s', as
     render(<ForgotPasswordComponent />);
     fireEvent.change(screen.getByPlaceholderText('Nhập email của bạn'), { target: { value: 'test@example.test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
-    await waitFor(() => expect(screen.getByText(data.message)).toHaveTextContent(data.message));
+    await waitFor(() => expect(screen.getByRole(failure ? 'alert' : 'status')).toHaveTextContent(data.message));
     expect(getter).not.toHaveBeenCalled();
     expect(document.querySelector('a[href*="token="]')).toBeNull();
     expect(screen.queryByText('Sao chép link')).not.toBeInTheDocument();

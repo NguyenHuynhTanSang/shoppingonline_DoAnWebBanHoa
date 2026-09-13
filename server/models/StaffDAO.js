@@ -3,6 +3,13 @@ const mongoose = require('mongoose');
 const Models = require('./Models');
 
 const StaffDAO = {
+  async migrateLegacyPasswordIfUnchanged(_id, expectedStoredPassword, newHash) {
+    return Models.Staff.findOneAndUpdate(
+      { _id, password: expectedStoredPassword, active: 1 },
+      { $set: { password: newHash } },
+      { new: true }
+    ).exec();
+  },
   async selectAll() {
     return Models.Staff.find({}).exec();
   },
@@ -41,18 +48,20 @@ const StaffDAO = {
     return Models.Staff.create(staff);
   },
 
-  async update(staff) {
+  async update(staff, passwordChanged = false) {
     const now = new Date().getTime();
     const newvalues = {
       username: staff.username,
-      password: staff.password,
       name: staff.name,
       phone: staff.phone,
       email: staff.email,
       active: staff.active,
       udate: now
     };
-    return Models.Staff.findByIdAndUpdate(staff._id, newvalues, { new: true }).exec();
+    if (passwordChanged) newvalues.password = staff.password;
+    return Models.Staff.findByIdAndUpdate(staff._id, {
+      $set: newvalues, ...(passwordChanged ? { $inc: { tokenVersion: 1 } } : {})
+    }, { new: true }).exec();
   },
 
   async setActive(_id, active) {

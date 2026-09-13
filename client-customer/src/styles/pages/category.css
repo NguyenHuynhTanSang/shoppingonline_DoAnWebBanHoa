@@ -1,0 +1,608 @@
+/* =====================================================
+   WIND FLOWER
+   CATEGORY PAGE RESPONSIVE
+
+   File riêng để không phụ thuộc vào
+   .home-product-grid trong App.css.
+===================================================== */
+
+.category-page-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.category-page-responsive {
+  width: 1180px;
+  max-width: calc(100% - 40px);
+  min-width: 0;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* =========================
+   HEADING
+========================= */
+
+.category-page-heading {
+  min-width: 0;
+}
+
+.category-page-responsive .category-page-title {
+  overflow-wrap: anywhere;
+}
+
+.category-page-responsive .category-page-desc {
+  max-width: 760px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* =========================
+   FILTER
+========================= */
+
+.category-price-filter-bar {
+  width: 100%;
+  min-width: 0;
+}
+
+.category-price-filter-select {
+  min-width: 0 !important;
+}
+
+.category-filter-button {
+  flex-shrink: 0;
+}
+
+/* =========================
+   PRODUCT GRID
+========================= */
+
+.category-product-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 24px;
+
+  width: 100%;
+  min-width: 0;
+}
+
+/* =========================
+   PRODUCT CARD
+========================= */
+
+.category-product-card {
+  width: 100%;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  /*
+   * App.css đang đặt
+   * .home-product-card min-height: 520px.
+   *
+   * Category page không cần card
+   * cao cố định như vậy.
+   */
+  min-height: 0 !important;
+  height: 100%;
+
+  padding: 0 0 14px;
+
+  border-radius: 16px;
+
+  background: #ffffff;
+
+  border:
+    1px solid
+    rgba(
+      20,
+      20,
+      28,
+      0.06
+    );
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      0,
+      0,
+      0,
+      0.08
+    );
+
+  overflow: hidden;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.category-product-card:hover {
+  transform:
+    translateY(-4px);
+
+  box-shadow:
+    0 14px 30px
+    rgba(
+      0,
+      0,
+      0,
+      0.12
+    );
+}
+
+/* =========================
+   IMAGE
+========================= */
+
+.category-product-image-link {
+  display: block;
+
+  width: 100%;
+
+  aspect-ratio: 1 / 1;
+
+  overflow: hidden;
+
+  background: #eeeeF2;
+}
+
+.category-product-card
+.category-product-image {
+  display: block;
+
+  width: 100% !important;
+  height: 100% !important;
+
+  aspect-ratio: 1 / 1;
+
+  object-fit: cover;
+
+  transition:
+    transform 0.25s ease;
+}
+
+.category-product-card:hover
+.category-product-image {
+  transform: scale(1.025);
+}
+
+/* =========================
+   PRODUCT INFORMATION
+========================= */
+
+.category-product-name {
+  margin:
+    14px 14px 8px !important;
+
+  min-height: 48px !important;
+
+  color: #19191f !important;
+
+  font-size: 16px !important;
+  font-weight: 700 !important;
+
+  line-height: 1.45 !important;
+
+  overflow-wrap: anywhere;
+}
+
+.category-product-price-area {
+  min-height: 48px;
+
+  padding:
+    0 14px;
+}
+
+.category-original-price {
+  margin:
+    0 0 3px;
+
+  color: #888888;
+
+  text-decoration:
+    line-through;
+
+  font-size: 13px;
+}
+
+.category-final-price {
+  margin: 0 !important;
+
+  color: #d81b60 !important;
+
+  font-size: 17px !important;
+  font-weight: 800 !important;
+
+  line-height: 1.35;
+}
+
+/* =========================
+   STOCK
+========================= */
+
+.category-stock-box {
+  min-height: 40px !important;
+
+  display: flex;
+  align-items: center;
+
+  margin:
+    8px 14px 10px !important;
+}
+
+.category-stock-box
+.product-stock-badge {
+  max-width: 100%;
+
+  padding:
+    6px 10px;
+
+  font-size: 12px;
+
+  white-space: normal;
+
+  text-align: center;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================
+   ACTION BUTTONS
+========================= */
+
+.category-product-actions {
+  display: flex !important;
+  flex-direction: column;
+
+  gap: 8px !important;
+
+  width: 100%;
+
+  margin-top: auto !important;
+
+  padding:
+    0 14px !important;
+}
+
+.category-product-actions button {
+  width: 100% !important;
+
+  min-width: 0;
+
+  min-height: 40px !important;
+
+  margin: 0 !important;
+
+  padding:
+    9px 10px !important;
+
+  border-radius:
+    9px !important;
+
+  font-size:
+    13px !important;
+}
+
+/* =========================
+   EMPTY / LOADING
+========================= */
+
+.category-status-text {
+  width: 100%;
+
+  padding:
+    20px 0;
+
+  overflow-wrap: anywhere;
+}
+
+/* =====================================================
+   MEDIUM DESKTOP / TABLET
+===================================================== */
+
+@media (max-width: 1200px) {
+  .category-product-grid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+
+    gap: 20px;
+  }
+}
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 768px) {
+  .category-page-responsive {
+    width: 100%;
+    max-width:
+      calc(100% - 28px);
+
+    padding:
+      26px 0 42px;
+  }
+
+  .category-page-responsive
+  .category-page-title {
+    margin-bottom: 10px;
+
+    font-size: 28px;
+    line-height: 1.2;
+  }
+
+  .category-page-responsive
+  .category-page-desc {
+    margin-bottom: 20px;
+
+    font-size: 15px;
+  }
+
+  .category-price-filter-bar {
+    display: block;
+
+    margin:
+      18px 0 24px;
+  }
+
+  .category-price-filter-select {
+    width: 100% !important;
+
+    height: 48px !important;
+
+    margin: 0 !important;
+
+    padding-left:
+      14px !important;
+
+    padding-right:
+      38px !important;
+
+    border-radius:
+      12px !important;
+
+    font-size:
+      14px !important;
+  }
+
+  /*
+   * Select đã lọc ngay khi onChange.
+   * Button hiện tại không có onClick,
+   * nên mobile không cần chiếm thêm chỗ.
+   *
+   * Desktop vẫn giữ button như cũ.
+   */
+  .category-filter-button {
+    display: none !important;
+  }
+
+  .category-product-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 14px;
+  }
+
+  .category-product-name {
+    margin:
+      11px 10px 7px !important;
+
+    min-height:
+      42px !important;
+
+    font-size:
+      14px !important;
+  }
+
+  .category-product-price-area {
+    min-height:
+      44px;
+
+    padding:
+      0 10px;
+  }
+
+  .category-original-price {
+    font-size: 11px;
+  }
+
+  .category-final-price {
+    font-size:
+      14px !important;
+  }
+
+  .category-stock-box {
+    min-height:
+      36px !important;
+
+    margin:
+      6px 10px 9px !important;
+  }
+
+  .category-stock-box
+  .product-stock-badge {
+    padding:
+      5px 8px;
+
+    font-size: 10px;
+  }
+
+  .category-product-actions {
+    gap:
+      7px !important;
+
+    padding:
+      0 10px !important;
+  }
+
+  .category-product-actions
+  button {
+    min-height:
+      37px !important;
+
+    padding:
+      8px 6px !important;
+
+    font-size:
+      11px !important;
+  }
+}
+
+/* =====================================================
+   iPHONE / MOBILE ~390px
+===================================================== */
+
+@media (max-width: 480px) {
+  .category-page-responsive {
+    max-width:
+      calc(100% - 24px);
+
+    padding-top:
+      24px;
+  }
+
+  .category-page-responsive
+  .category-page-title {
+    font-size: 27px;
+  }
+
+  .category-page-responsive
+  .category-page-desc {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /*
+   * 390px:
+   *
+   * container ~366px
+   * gap 12px
+   * mỗi card ~177px
+   *
+   * đủ để hiển thị đẹp 2 sản phẩm/hàng.
+   */
+  .category-product-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap:
+      12px;
+  }
+
+  .category-product-card {
+    border-radius:
+      12px;
+  }
+
+  .category-product-name {
+    min-height:
+      40px !important;
+
+    font-size:
+      13px !important;
+
+    line-height:
+      1.4 !important;
+  }
+
+  .category-final-price {
+    font-size:
+      13px !important;
+  }
+
+  .category-stock-box
+  .product-stock-badge {
+    font-size:
+      9.5px;
+  }
+
+  .category-product-actions
+  button {
+    min-height:
+      36px !important;
+
+    font-size:
+      10.5px !important;
+
+    line-height: 1.2;
+  }
+}
+
+/* =====================================================
+   VERY SMALL MOBILE
+===================================================== */
+
+@media (max-width: 350px) {
+  .category-product-grid {
+    grid-template-columns:
+      1fr;
+
+    gap: 16px;
+  }
+
+  .category-product-name {
+    min-height:
+      0 !important;
+
+    font-size:
+      15px !important;
+  }
+
+  .category-final-price {
+    font-size:
+      16px !important;
+  }
+
+  .category-stock-box
+  .product-stock-badge {
+    font-size:
+      12px;
+  }
+
+  .category-product-actions
+  button {
+    min-height:
+      40px !important;
+
+    font-size:
+      13px !important;
+  }
+}
+
+/* =====================================================
+   CUSTOM PRICE FILTER
+===================================================== */
+
+.category-custom-filter {
+  width: 100%;
+
+  display: flex;
+
+  margin: 24px 0 30px;
+}
+
+@media (max-width: 768px) {
+  .category-custom-filter {
+    margin: 18px 0 24px;
+  }
+}
