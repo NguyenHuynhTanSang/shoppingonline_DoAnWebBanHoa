@@ -126,14 +126,74 @@ async clearDeliveryAssignment(_id, expectedStaffId) {
   ).exec();
 },
 
-  async transitionStatus(_id, expectedStatus, newStatus, session, customerId, paymentStatus) {
-    if (!session?.inTransaction()) throw new Error('Order transition requires a transaction');
-    const filter = { _id, status: expectedStatus };
-    if (customerId) filter['customer._id'] = customerId;
-    const changes = { status: newStatus };
-    if (paymentStatus !== undefined) changes.paymentStatus = paymentStatus;
-    return Models.Order.findOneAndUpdate(filter, { $set: changes }, { new: true, session }).exec();
-  },
+async appendDeliveryAttempt(_id, staffId, attempt) {
+  return Models.Order.findOneAndUpdate(
+    {
+      _id,
+      status: 'delivering',
+      'delivery.assignedStaff.id': staffId,
+      'delivery.attempts.19': { $exists: false }
+    },
+    {
+      $push: {
+        'delivery.attempts': attempt
+      }
+    },
+    {
+      new: true,
+      runValidators: true
+    }
+  ).exec();
+},
+
+  async transitionStatus(
+  _id,
+  expectedStatus,
+  newStatus,
+  session,
+  customerId,
+  paymentStatus,
+  deliveryContext
+) {
+  if (!session?.inTransaction()) {
+    throw new Error('Order transition requires a transaction');
+  }
+
+  const filter = {
+    _id,
+    status: expectedStatus
+  };
+
+  if (customerId) {
+    filter['customer._id'] = customerId;
+  }
+
+  if (deliveryContext?.staffId) {
+    filter['delivery.assignedStaff.id'] = deliveryContext.staffId;
+  }
+
+  const changes = {
+    status: newStatus
+  };
+
+  if (paymentStatus !== undefined) {
+    changes.paymentStatus = paymentStatus;
+  }
+
+  if (deliveryContext?.startedAt !== undefined) {
+    changes['delivery.startedAt'] = deliveryContext.startedAt;
+  }
+
+  if (deliveryContext?.deliveredAt !== undefined) {
+    changes['delivery.deliveredAt'] = deliveryContext.deliveredAt;
+  }
+
+  return Models.Order.findOneAndUpdate(
+    filter,
+    { $set: changes },
+    { new: true, session }
+  ).exec();
+},
 
   async selectByCustID(_cid) {
     return Models.Order.find({

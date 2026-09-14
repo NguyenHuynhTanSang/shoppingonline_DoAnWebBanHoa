@@ -164,7 +164,7 @@ test('HTTP competing admin approve/cancel from pending returns 200/409, never 20
 
 test('completion retry and forbidden cancel preserve voucher count and terminal inventory', async () => {
   const s = fixture(true, 'delivering');
-  await s.lifecycle.transition(orderId, 'completed', 'staff');
+  await s.lifecycle.transition(orderId, 'completed', 'admin');
   const before = JSON.stringify(s.state), writes = s.writes.length;
   assert.equal((await s.lifecycle.transition(orderId, 'completed', 'admin')).unchanged, true);
   await assert.rejects(() => cancel(s, 'admin'), { code: 'INVALID_TRANSITION' });

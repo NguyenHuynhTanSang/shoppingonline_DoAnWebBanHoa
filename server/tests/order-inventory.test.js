@@ -50,7 +50,7 @@ for (const reserved of [true, false, 'missing']) {
   test(`${reserved}: concurrent/duplicate completion deducts only legacy and counts sold once`, async () => {
     const s = fixture('delivering', reserved === 'missing' ? false : reserved);
     if (reserved === 'missing') delete s.state.orders[orderId].stockReserved;
-    const run = () => s.lifecycle.transition(orderId, 'completed', 'staff');
+    const run = () => s.lifecycle.transition(orderId, 'completed', 'admin');
     await Promise.all([run(), run()]); await run();
     assert.equal(s.state.products[productId].stock, reserved === true ? 1 : 0);
     assert.equal(s.state.products[productId].sold, 1); assert.equal(s.state.orders[orderId].status, 'completed');

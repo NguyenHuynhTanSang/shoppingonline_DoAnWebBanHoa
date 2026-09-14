@@ -67,6 +67,17 @@ function toPlainObject(doc) {
   return doc;
 }
 
+function sanitizeOrderForCustomer(orderDoc) {
+  const order = toPlainObject(orderDoc) || {};
+  const safeOrder = { ...order };
+
+  // Operational delivery metadata is internal.
+  // DELIVERY-005 will expose an explicit customer-safe tracking projection.
+  delete safeOrder.delivery;
+
+  return safeOrder;
+}
+
 function sanitizeCustomer(customerDoc) {
   const customer = toPlainObject(customerDoc);
   if (!customer) return null;
@@ -1378,7 +1389,7 @@ router.get('/orders', JwtUtil.checkToken, requireActiveCustomer, async function 
     const orders = await OrderDAO.selectByCustID(customerId);
 
     const normalizedOrders = (Array.isArray(orders) ? orders : []).map((order) => {
-      const safeOrder = toPlainObject(order) || {};
+      const safeOrder = sanitizeOrderForCustomer(order);
       const canReview = canCustomerReviewOrderStatus(safeOrder.status);
 
       return {

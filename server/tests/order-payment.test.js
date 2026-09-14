@@ -34,7 +34,7 @@ test('checkout payment tampering is ignored; allowlist/defaults preserved with n
 for (const method of ['cod', 'bank', 'momo']) {
   test(`${method}: completion/payment write is atomic and duplicate completion does nothing`, async () => {
     const s = fixture(method);
-    const results = await Promise.all([s.lifecycle.transition(oid, 'completed', 'admin'), s.lifecycle.transition(oid, 'completed', 'staff')]);
+    const results = await Promise.all([s.lifecycle.transition(oid, 'completed', 'admin'), s.lifecycle.transition(oid, 'completed', 'admin')]);
     assert.equal(results.filter(result => !result.unchanged).length, 1);
     assert.equal(s.state.orders[oid].paymentStatus, method === 'cod' ? P.PAID : P.DEMO_UNVERIFIED);
     assert.equal(s.state.orders[oid].status, 'completed');

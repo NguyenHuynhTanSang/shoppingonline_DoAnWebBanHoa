@@ -9,6 +9,91 @@ class OrderError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
 }
 function conflict(code, message) { return new OrderError(409, code, message); }
+
+function normalizeDeliveryContext(input, actor, to) {
+  if (input === undefined || input === null) return null;
+
+  if (actor !== 'staff') {
+    throw new OrderError(
+      403,
+      'FORBIDDEN',
+      'Ngữ cảnh giao hàng chỉ dành cho nhân viên giao hàng'
+    );
+  }
+
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw new OrderError(
+      400,
+      'INVALID_DELIVERY_CONTEXT',
+      'Ngữ cảnh giao hàng không hợp lệ'
+    );
+  }
+
+  const allowedKeys = ['staffId', 'startedAt', 'deliveredAt'];
+
+  if (Object.keys(input).some(key => !allowedKeys.includes(key))) {
+    throw new OrderError(
+      400,
+      'INVALID_DELIVERY_CONTEXT',
+      'Ngữ cảnh giao hàng không hợp lệ'
+    );
+  }
+
+  const staffId = String(input.staffId || '').trim();
+
+  if (!/^[a-f\d]{24}$/i.test(staffId)) {
+    throw new OrderError(
+      403,
+      'DELIVERY_NOT_ASSIGNED',
+      'Bạn không được phân công giao đơn hàng này'
+    );
+  }
+
+  if (to === 'delivering') {
+    if (
+      !Number.isSafeInteger(input.startedAt) ||
+      input.startedAt < 0 ||
+      input.deliveredAt !== undefined
+    ) {
+      throw new OrderError(
+        400,
+        'INVALID_DELIVERY_CONTEXT',
+        'Thông tin bắt đầu giao hàng không hợp lệ'
+      );
+    }
+
+    return {
+      staffId,
+      startedAt: input.startedAt
+    };
+  }
+
+  if (to === 'completed') {
+    if (
+      !Number.isSafeInteger(input.deliveredAt) ||
+      input.deliveredAt < 0 ||
+      input.startedAt !== undefined
+    ) {
+      throw new OrderError(
+        400,
+        'INVALID_DELIVERY_CONTEXT',
+        'Thông tin hoàn tất giao hàng không hợp lệ'
+      );
+    }
+
+    return {
+      staffId,
+      deliveredAt: input.deliveredAt
+    };
+  }
+
+  throw new OrderError(
+    400,
+    'INVALID_DELIVERY_CONTEXT',
+    'Ngữ cảnh giao hàng không phù hợp trạng thái đơn hàng'
+  );
+}
+
 function errorResponse(res, error) {
   if (error instanceof OrderError) {
     return res.status(error.status).json({ success: false, code: error.code, message: error.message });
@@ -88,12 +173,17 @@ async function releaseVoucher(voucherCode, session) {
   ).exec();
   if (!released) throw conflict('VOUCHER_RELEASE_CONFLICT', 'Chưa thể hoàn lượt dùng voucher. Vui lòng tải lại đơn hàng.');
 }
-async function transition(orderId, to, actor, customerId) {
+async function transition(orderId, to, actor, customerId, deliveryContextInput) {
   if (!isValidOrderStatus(to)) throw new OrderError(400, 'INVALID_STATUS', 'Trạng thái không hợp lệ');
   if (!['admin', 'staff', 'customer'].includes(actor) || (actor === 'customer' && !customerId)) {
     throw new OrderError(403, 'FORBIDDEN', 'Không có quyền cập nhật đơn hàng');
   }
   if (!/^[a-f\d]{24}$/i.test(orderId)) throw new OrderError(400, 'INVALID_ORDER_ID', 'Mã đơn hàng không hợp lệ');
+    const deliveryContext = normalizeDeliveryContext(
+    deliveryContextInput,
+    actor,
+    to
+  );
   // One request retains its first observed FROM across driver callback retries.
   // Keep the raw value for the DB guard, including legacy uppercase statuses.
   let expectation;
@@ -105,14 +195,49 @@ async function transition(orderId, to, actor, customerId) {
     }
     if (!expectation) expectation = Object.freeze({ status: order.status });
     const from = String(order.status || '').trim().toLowerCase();
-    if (from === to) return { order, unchanged: true };
+
+const staffDeliveryTransition =
+  actor === 'staff' &&
+  (
+    (from === 'preparing' && to === 'delivering') ||
+    (from === 'delivering' && to === 'completed')
+  );
+
+if (staffDeliveryTransition && !deliveryContext) {
+  throw new OrderError(
+    403,
+    'DELIVERY_WORKFLOW_REQUIRED',
+    'Nhân viên phải sử dụng luồng giao hàng được phân công'
+  );
+}
+
+if (
+  deliveryContext &&
+  String(order.delivery?.assignedStaff?.id || '') !== deliveryContext.staffId
+) {
+  throw new OrderError(
+    403,
+    'DELIVERY_NOT_ASSIGNED',
+    'Bạn không được phân công giao đơn hàng này'
+  );
+}
+
+if (from === to) return { order, unchanged: true };
     if (order.status !== expectation.status) throw conflict('STALE_ORDER_STATUS', 'Trạng thái đơn hàng đã thay đổi. Vui lòng tải lại.');
     if (!canTransitionOrder(from, to, actor)) throw conflict('INVALID_TRANSITION', 'Không thể chuyển trạng thái đơn hàng theo yêu cầu');
 
     // The expected raw status also preserves compatibility with old uppercase
     // values. This write conflicts with concurrent lifecycle transactions.
     const paymentStatus = to === 'completed' ? PaymentPolicy.completionStatus(order) : undefined;
-    const saved = await OrderDAO.transitionStatus(orderId, expectation.status, to, session, actor === 'customer' ? customerId : undefined, paymentStatus);
+    const saved = await OrderDAO.transitionStatus(
+  orderId,
+  expectation.status,
+  to,
+  session,
+  actor === 'customer' ? customerId : undefined,
+  paymentStatus,
+  deliveryContext
+);
     if (!saved) throw conflict('STALE_ORDER_STATUS', 'Trạng thái đơn hàng đã thay đổi. Vui lòng tải lại.');
     if (to === 'completed') {
       if (order.stockReserved !== true) await reserve(order.items, session);

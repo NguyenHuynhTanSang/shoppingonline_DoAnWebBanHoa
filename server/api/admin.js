@@ -1633,6 +1633,90 @@ router.delete(
   }
 );
 
+router.post(
+  '/orders/:id/delivery/start',
+  JwtUtil.checkToken,
+  JwtUtil.requireRoles(['staff']),
+  async function (req, res) {
+    try {
+      const { order, unchanged } = await DeliveryService.startDelivery(
+        req.params.id,
+        {
+          id: req.decoded?.sub,
+          role: req.decoded?.role,
+          name: req.decoded?.username
+        }
+      );
+
+      return res.json({
+        success: true,
+        message: unchanged
+          ? 'Đơn hàng đã ở trạng thái đang giao.'
+          : 'Đã bắt đầu giao hàng',
+        order: safeOrderCustomer(order)
+      });
+    } catch (err) {
+      return DeliveryService.errorResponse(res, err);
+    }
+  }
+);
+
+router.post(
+  '/orders/:id/delivery/fail',
+  JwtUtil.checkToken,
+  JwtUtil.requireRoles(['staff']),
+  async function (req, res) {
+    try {
+      const { order, attempt } = await DeliveryService.failDelivery(
+        req.params.id,
+        req.body,
+        {
+          id: req.decoded?.sub,
+          role: req.decoded?.role,
+          name: req.decoded?.username
+        }
+      );
+
+      return res.json({
+        success: true,
+        message: 'Đã ghi nhận lần giao hàng chưa thành công',
+        attempt,
+        order: safeOrderCustomer(order)
+      });
+    } catch (err) {
+      return DeliveryService.errorResponse(res, err);
+    }
+  }
+);
+
+router.post(
+  '/orders/:id/delivery/complete',
+  JwtUtil.checkToken,
+  JwtUtil.requireRoles(['staff']),
+  async function (req, res) {
+    try {
+      const { order, unchanged } = await DeliveryService.completeDelivery(
+        req.params.id,
+        {
+          id: req.decoded?.sub,
+          role: req.decoded?.role,
+          name: req.decoded?.username
+        }
+      );
+
+      return res.json({
+        success: true,
+        message: unchanged
+          ? 'Đơn hàng đã hoàn tất.'
+          : 'Giao hàng thành công',
+        order: safeOrderCustomer(order)
+      });
+    } catch (err) {
+      return DeliveryService.errorResponse(res, err);
+    }
+  }
+);
+
 router.put(
   '/orders/:id/status',
   JwtUtil.checkToken,
@@ -1641,6 +1725,7 @@ router.put(
     try {
       const _id = req.params.id;
       const newStatus = typeof req.body.status === 'string' ? req.body.status.trim().toLowerCase() : '';
+
       if (!isValidOrderStatus(newStatus)) {
         return res.status(400).json({
           success: false,
@@ -1648,7 +1733,22 @@ router.put(
         });
       }
 
-      const { order: savedOrder } = await OrderLifecycle.transition(_id, newStatus, req.decoded?.role);
+      if (
+        req.decoded?.role === 'staff' &&
+        ['delivering', 'completed'].includes(newStatus)
+      ) {
+        return res.status(403).json({
+          success: false,
+          code: 'DELIVERY_WORKFLOW_REQUIRED',
+          message: 'Nhân viên phải sử dụng luồng giao hàng được phân công.'
+        });
+      }
+
+      const { order: savedOrder } = await OrderLifecycle.transition(
+        _id,
+        newStatus,
+        req.decoded?.role
+      );
 
       return res.json({
         success: true,

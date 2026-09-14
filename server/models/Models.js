@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const { DELIVERY_TIME_SLOTS, CARD_MESSAGE_LIMIT, isCalendarDate } = require('../utils/DeliveryValidation');
 
+const {
+  DELIVERY_FAILURE_REASONS,
+  DELIVERY_ATTEMPT_NOTE_LIMIT
+} = require('../utils/DeliveryWorkflow');
+
 // =========================
 // Admin
 // =========================
@@ -193,12 +198,69 @@ const DeliveryActorSnapshotSchema = new Schema({
   name: { type: String, trim: true, default: '' }
 }, { versionKey: false, _id: false });
 
-const DeliverySchema = new Schema({
-  assignedStaff: { type: DeliveryStaffSnapshotSchema, default: null },
-  assignedAt: { type: Number, default: null },
-  assignedBy: { type: DeliveryActorSnapshotSchema, default: null }
+const DeliveryAttemptSchema = new Schema({
+  attemptedAt: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+
+  result: {
+    type: String,
+    enum: ['failed'],
+    required: true
+  },
+
+  reason: {
+    type: String,
+    enum: DELIVERY_FAILURE_REASONS,
+    required: true
+  },
+
+  note: {
+    type: String,
+    trim: true,
+    maxlength: DELIVERY_ATTEMPT_NOTE_LIMIT,
+    default: ''
+  },
+
+  actorId: {
+    type: Schema.Types.ObjectId,
+    required: true
+  }
 }, { versionKey: false, _id: false });
 
+const DeliverySchema = new Schema({
+  assignedStaff: {
+    type: DeliveryStaffSnapshotSchema,
+    default: null
+  },
+
+  assignedAt: {
+    type: Number,
+    default: null
+  },
+
+  assignedBy: {
+    type: DeliveryActorSnapshotSchema,
+    default: null
+  },
+
+  startedAt: {
+    type: Number,
+    default: null
+  },
+
+  deliveredAt: {
+    type: Number,
+    default: null
+  },
+
+  attempts: {
+    type: [DeliveryAttemptSchema],
+    default: []
+  }
+}, { versionKey: false, _id: false });
 // =========================
 // Order
 // =========================

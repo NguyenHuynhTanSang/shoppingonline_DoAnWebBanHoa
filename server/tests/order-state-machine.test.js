@@ -40,9 +40,33 @@ test('direct HTTP full matrix preserves ownership and inventory/no-op effects', 
     for (const actor of ['admin', 'staff']) for (const from of statuses) for (const to of statuses) {
       reset(from);
       const response = await request(actor, to);
-      const changed = edges.includes(`${from}:${to}`);
-      assert.equal(response.status, from === to || changed ? 200 : 409, `${actor}:${from}:${to}`);
-      assert.equal(response.body.success, from === to || changed);
+      const workflowRequired =
+  actor === 'staff' &&
+  ['delivering', 'completed'].includes(to);
+
+const changed =
+  !workflowRequired &&
+  edges.includes(`${from}:${to}`);
+
+const expectedStatus =
+  workflowRequired
+    ? 403
+    : from === to || changed
+      ? 200
+      : 409;
+
+assert.equal(
+  response.status,
+  expectedStatus,
+  `${actor}:${from}:${to}`
+);
+
+assert.equal(
+  response.body.success,
+  workflowRequired
+    ? false
+    : from === to || changed
+);
       assert.equal(store.state.orders[id].status, changed ? to : from);
       assert.equal(store.state.products[pid].stock, changed && to === 'canceled' ? 3 : 2);
       assert.equal(store.state.products[pid].sold, changed && to === 'completed' ? 1 : 0);
