@@ -180,6 +180,26 @@ const ItemSchema = new Schema({
 }, { versionKey: false, _id: false });
 
 // =========================
+// Delivery assignment
+// =========================
+const DeliveryStaffSnapshotSchema = new Schema({
+  id: { type: Schema.Types.ObjectId, required: true },
+  name: { type: String, trim: true, required: true }
+}, { versionKey: false, _id: false });
+
+const DeliveryActorSnapshotSchema = new Schema({
+  id: { type: Schema.Types.ObjectId, required: true },
+  role: { type: String, enum: ['admin', 'staff'], required: true },
+  name: { type: String, trim: true, default: '' }
+}, { versionKey: false, _id: false });
+
+const DeliverySchema = new Schema({
+  assignedStaff: { type: DeliveryStaffSnapshotSchema, default: null },
+  assignedAt: { type: Number, default: null },
+  assignedBy: { type: DeliveryActorSnapshotSchema, default: null }
+}, { versionKey: false, _id: false });
+
+// =========================
 // Order
 // =========================
 const OrderSchema = new Schema({
@@ -192,6 +212,7 @@ const OrderSchema = new Schema({
   deliveryDate: { type: String, validate: value => value == null || isCalendarDate(value) },
   deliveryTimeSlot: { type: String, enum: DELIVERY_TIME_SLOTS },
   cardMessage: { type: String, trim: true, maxlength: CARD_MESSAGE_LIMIT },
+  delivery: { type: DeliverySchema, default: undefined },
   _id: Schema.Types.ObjectId,
   cdate: Number,
   total: Number,

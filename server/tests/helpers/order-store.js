@@ -117,6 +117,7 @@ async function http(store) {
   const pass = (req, res, next) => next();
   const idempotency = load('services/CheckoutIdempotencyService.js', { crypto: require('crypto'), '../models/OrderDAO': store.orderDAO, './OrderLifecycleService': store.lifecycle, '../utils/DeliveryValidation': require('../../utils/DeliveryValidation'), '../utils/PaymentPolicy': require('../../utils/PaymentPolicy') });
   const dependencies = {
+    '../services/DeliveryService': {},
     '../services/CheckoutIdempotencyService': idempotency,
     express, mongoose: store.mongo, crypto: require('crypto'), './support': express.Router(),
     '../services/OrderLifecycleService': store.lifecycle,

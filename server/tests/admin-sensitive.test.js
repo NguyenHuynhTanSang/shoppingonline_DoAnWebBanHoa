@@ -16,6 +16,7 @@ test('Admin account responses are safe on DAO/fallback paths and blank staff pas
     const pass = (req, res, next) => { req.decoded = { role: 'admin' }; next(); };
     const dependencies = {
       '../services/OrderLifecycleService': { async transition(id, status) { order.status = status; return { order }; } },
+      '../services/DeliveryService': {},
       '../services/PasswordService': require('../services/PasswordService'),
       '../utils/OrderStateMachine': require('../utils/OrderStateMachine'),
       '../utils/AuthRateLimit': require('../utils/AuthRateLimit'),

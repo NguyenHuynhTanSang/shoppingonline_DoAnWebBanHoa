@@ -1,6 +1,7 @@
 require('../utils/MongooseUtil');
 const mongoose = require('mongoose');
 const Models = require('./Models');
+const ASSIGNABLE_DELIVERY_STATUSES = Object.freeze(['approved', 'preparing']);
 
 const OrderDAO = {
   async checkoutIndexes() {
@@ -68,6 +69,59 @@ const OrderDAO = {
   async selectByIDWithSession(_id, session) {
     return Models.Order.findById(_id).session(session).exec();
   },
+
+  async assignDeliveryStaff(_id, assignment, expectedStaffId = null) {
+  const filter = {
+    _id,
+    status: { $in: ASSIGNABLE_DELIVERY_STATUSES }
+  };
+
+  if (expectedStaffId) {
+    filter['delivery.assignedStaff.id'] = expectedStaffId;
+  } else {
+    filter.$or = [
+      { 'delivery.assignedStaff': { $exists: false } },
+      { 'delivery.assignedStaff': null },
+      { 'delivery.assignedStaff.id': { $exists: false } }
+    ];
+  }
+
+  return Models.Order.findOneAndUpdate(
+    filter,
+    {
+      $set: {
+        'delivery.assignedStaff': assignment.assignedStaff,
+        'delivery.assignedAt': assignment.assignedAt,
+        'delivery.assignedBy': assignment.assignedBy
+      }
+    },
+    {
+      new: true,
+      runValidators: true
+    }
+  ).exec();
+},
+
+async clearDeliveryAssignment(_id, expectedStaffId) {
+  return Models.Order.findOneAndUpdate(
+    {
+      _id,
+      status: { $in: ASSIGNABLE_DELIVERY_STATUSES },
+      'delivery.assignedStaff.id': expectedStaffId
+    },
+    {
+      $set: {
+        'delivery.assignedStaff': null,
+        'delivery.assignedAt': null,
+        'delivery.assignedBy': null
+      }
+    },
+    {
+      new: true,
+      runValidators: true
+    }
+  ).exec();
+},
 
   async transitionStatus(_id, expectedStatus, newStatus, session, customerId, paymentStatus) {
     if (!session?.inTransaction()) throw new Error('Order transition requires a transaction');

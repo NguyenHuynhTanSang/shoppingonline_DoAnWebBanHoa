@@ -9,7 +9,7 @@ const PasswordService = require('../services/PasswordService');
 const AuthRateLimit = require('../utils/AuthRateLimit');
 const { isValidOrderStatus } = require('../utils/OrderStateMachine');
 const OrderLifecycle = require('../services/OrderLifecycleService');
-
+const DeliveryService = require('../services/DeliveryService');
 // daos
 const AdminDAO = require('../models/AdminDAO');
 const StaffDAO = require('../models/StaffDAO');
@@ -1567,6 +1567,68 @@ router.get(
         success: false,
         message: 'Server error'
       });
+    }
+  }
+);
+
+router.put(
+  '/orders/:id/delivery/assignment',
+  JwtUtil.checkToken,
+  JwtUtil.requireRoles(['admin']),
+  async function (req, res) {
+    try {
+      const staffId =
+        typeof req.body?.staffId === 'string'
+          ? req.body.staffId.trim()
+          : '';
+
+      const { order, unchanged } = await DeliveryService.assignStaff(
+        req.params.id,
+        staffId,
+        {
+          id: req.decoded?.sub,
+          role: req.decoded?.role,
+          name: req.decoded?.username
+        }
+      );
+
+      return res.json({
+        success: true,
+        message: unchanged
+          ? 'Nhân viên này đã được phân công cho đơn hàng.'
+          : 'Phân công nhân viên giao hàng thành công',
+        order: safeOrderCustomer(order)
+      });
+    } catch (err) {
+      return DeliveryService.errorResponse(res, err);
+    }
+  }
+);
+
+router.delete(
+  '/orders/:id/delivery/assignment',
+  JwtUtil.checkToken,
+  JwtUtil.requireRoles(['admin']),
+  async function (req, res) {
+    try {
+      const { order, unchanged } = await DeliveryService.clearAssignment(
+        req.params.id,
+        {
+          id: req.decoded?.sub,
+          role: req.decoded?.role,
+          name: req.decoded?.username
+        }
+      );
+
+      return res.json({
+        success: true,
+        message: unchanged
+          ? 'Đơn hàng hiện chưa có nhân viên giao hàng.'
+          : 'Đã bỏ phân công nhân viên giao hàng',
+        order: safeOrderCustomer(order)
+      });
+    } catch (err) {
+      return DeliveryService.errorResponse(res, err);
     }
   }
 );
