@@ -65,6 +65,9 @@ const OrderDAO = {
     }
     return Models.Order.create(order);
   },
+  async selectByID(_id) {
+    return Models.Order.findById(_id).exec();
+  },
 
   async selectByIDWithSession(_id, session) {
     return Models.Order.findById(_id).session(session).exec();
