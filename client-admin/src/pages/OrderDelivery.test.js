@@ -530,3 +530,104 @@ test(
     }
   }
 );
+test(
+  'admin displays delivery detail and failed attempt history',
+  async () => {
+    localStorage.clear();
+
+    localStorage.setItem(
+      'adminRole',
+      'admin'
+    );
+
+    API.get.mockReset();
+    API.post.mockReset();
+    API.put.mockReset();
+    API.delete.mockReset();
+
+    API.get.mockImplementation((url) => {
+      if (url === '/admin/staffs') {
+        return Promise.resolve({
+          data: {
+            success: true,
+            staffs: []
+          }
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          success: true,
+          orders: [
+            buildDeliveryOrder({
+              status: 'delivering',
+              delivery: {
+                assignedStaff: {
+                  id: STAFF_A_ID,
+                  name: 'Staff A'
+                },
+                assignedAt: Date.now(),
+                startedAt: Date.now(),
+                deliveredAt: null,
+                attempts: [
+                  {
+                    result: 'failed',
+                    reason:
+                      'customer_unavailable',
+                    note:
+                      'Khách chưa nghe máy',
+                    attemptedAt:
+                      Date.now()
+                  }
+                ]
+              }
+            })
+          ]
+        }
+      });
+    });
+
+    render(<OrderAdminComponent />);
+
+    fireEvent.click(
+      await screen.findByText(
+        'Xem chi tiết'
+      )
+    );
+
+    expect(
+      await screen.findByText(
+        'Chi tiết giao hàng'
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        'Lịch sử giao chưa thành công'
+      )
+    ).toBeInTheDocument();
+
+    const deliveryStaffLabel =
+  screen.getByText('Nhân viên giao:');
+
+expect(
+  deliveryStaffLabel.parentElement
+).toHaveTextContent('Staff A');
+
+    expect(
+      screen.getByText('Lần 1')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        'Không liên hệ được khách'
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        'Khách chưa nghe máy'
+      )
+    ).toBeInTheDocument();
+  }
+);

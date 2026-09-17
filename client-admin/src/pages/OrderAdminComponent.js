@@ -52,6 +52,35 @@ const DELIVERY_FAILURE_OPTIONS = [
   }
 ];
 
+const formatDeliveryDateTime = (value) => {
+  if (!value) {
+    return 'Chưa có';
+  }
+
+  const normalizedValue =
+    typeof value === 'string' &&
+    /^\d+$/.test(value)
+      ? Number(value)
+      : value;
+
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Chưa có';
+  }
+
+  return date.toLocaleString('vi-VN');
+};
+
+const getDeliveryFailureLabel = (reason) => {
+  const matched =
+    DELIVERY_FAILURE_OPTIONS.find(
+      (option) => option.value === reason
+    );
+
+  return matched?.label || reason || 'Không rõ';
+};
+
 const getStoredAdminRole = () => {
   const directRole = String(
     localStorage.getItem('adminRole') || ''
@@ -1357,6 +1386,10 @@ const failureDraft =
     reason: '',
     note: ''
   };
+  const deliveryAttempts =
+  Array.isArray(order.delivery?.attempts)
+    ? order.delivery.attempts
+    : [];
 
               return (
                 <div className="admin-order-card" key={order._id}>
@@ -1614,6 +1647,129 @@ const failureDraft =
                           </p>
                         )}
                       </div>
+                      {order.delivery && (
+  <div
+    style={{
+      marginTop: '18px',
+      padding: '16px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '12px',
+      background: '#ffffff'
+    }}
+  >
+    <h4
+      style={{
+        marginTop: 0,
+        marginBottom: '14px'
+      }}
+    >
+      Chi tiết giao hàng
+    </h4>
+
+    <div
+      style={{
+        display: 'grid',
+        gap: '8px'
+      }}
+    >
+      <div>
+        <strong>Nhân viên giao:</strong>{' '}
+        {assignedStaff?.name ||
+          'Chưa phân công'}
+      </div>
+
+      <div>
+        <strong>Thời điểm phân công:</strong>{' '}
+        {formatDeliveryDateTime(
+          order.delivery?.assignedAt
+        )}
+      </div>
+
+      <div>
+        <strong>Bắt đầu giao:</strong>{' '}
+        {formatDeliveryDateTime(
+          order.delivery?.startedAt
+        )}
+      </div>
+
+      <div>
+        <strong>Giao thành công:</strong>{' '}
+        {formatDeliveryDateTime(
+          order.delivery?.deliveredAt
+        )}
+      </div>
+    </div>
+
+    <div
+      style={{
+        marginTop: '16px'
+      }}
+    >
+      <strong>
+        Lịch sử giao chưa thành công
+      </strong>
+
+      {deliveryAttempts.length === 0 ? (
+        <p
+          style={{
+            marginBottom: 0,
+            color: '#6b7280'
+          }}
+        >
+          Chưa có lần giao hàng thất bại.
+        </p>
+      ) : (
+        <div
+          style={{
+            marginTop: '10px',
+            display: 'grid',
+            gap: '10px'
+          }}
+        >
+          {deliveryAttempts.map(
+            (attempt, index) => (
+              <div
+                key={`${order._id}-delivery-attempt-${index}`}
+                style={{
+                  padding: '12px',
+                  border: '1px solid #fde68a',
+                  borderRadius: '10px',
+                  background: '#fffbeb'
+                }}
+              >
+                <div>
+                  <strong>
+                    Lần {index + 1}
+                  </strong>
+                </div>
+
+                <div>
+                  <strong>Lý do:</strong>{' '}
+                  {getDeliveryFailureLabel(
+                    attempt?.reason
+                  )}
+                </div>
+
+                <div>
+                  <strong>Ghi chú:</strong>{' '}
+                  {attempt?.note ||
+                    'Không có ghi chú'}
+                </div>
+
+                <div>
+                  <strong>Thời điểm:</strong>{' '}
+                  {formatDeliveryDateTime(
+                    attempt?.attemptedAt
+                  )}
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
                       <div className="admin-order-timeline-wrap">
                         {isStaff && (
