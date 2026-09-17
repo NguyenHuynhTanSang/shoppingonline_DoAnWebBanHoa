@@ -5,6 +5,7 @@ jest.mock('../services/api', () => ({
   __esModule: true,
   default: {
     get: jest.fn(),
+    post: jest.fn(),
     put: jest.fn(),
     delete: jest.fn()
   }
@@ -312,5 +313,220 @@ test(
     expect(API.get).not.toHaveBeenCalledWith(
       '/admin/staffs'
     );
+  }
+);
+test(
+  'assigned staff can start, record failed attempt and complete delivery',
+  async () => {
+    localStorage.clear();
+
+    localStorage.setItem('adminRole', 'staff');
+    localStorage.setItem(
+      'adminUser',
+      JSON.stringify({
+        _id: STAFF_A_ID,
+        name: 'Staff A',
+        role: 'staff'
+      })
+    );
+
+    API.get.mockReset();
+    API.post.mockReset();
+    API.put.mockReset();
+    API.delete.mockReset();
+
+    const assignedDelivery = {
+      assignedStaff: {
+        id: STAFF_A_ID,
+        name: 'Staff A'
+      },
+      assignedAt: Date.now(),
+      attempts: []
+    };
+
+    API.get.mockResolvedValue({
+      data: {
+        success: true,
+        orders: [
+          buildDeliveryOrder({
+            status: 'preparing',
+            delivery: assignedDelivery
+          })
+        ]
+      }
+    });
+
+    API.post
+      .mockResolvedValueOnce({
+        data: {
+          success: true,
+          message: 'Đã bắt đầu giao hàng.',
+          order: buildDeliveryOrder({
+            status: 'delivering',
+            delivery: {
+              ...assignedDelivery,
+              startedAt: Date.now()
+            }
+          })
+        }
+      })
+      .mockResolvedValueOnce({
+        data: {
+          success: true,
+          message:
+            'Đã ghi nhận giao hàng chưa thành công.',
+          order: buildDeliveryOrder({
+            status: 'delivering',
+            delivery: {
+              ...assignedDelivery,
+              startedAt: Date.now(),
+              attempts: [
+                {
+                  result: 'failed',
+                  reason: 'customer_unavailable',
+                  note: 'Khách chưa nghe máy',
+                  attemptedAt: Date.now()
+                }
+              ]
+            }
+          })
+        }
+      })
+      .mockResolvedValueOnce({
+        data: {
+          success: true,
+          message: 'Giao hàng thành công.',
+          order: buildDeliveryOrder({
+            status: 'completed',
+            delivery: {
+              ...assignedDelivery,
+              startedAt: Date.now(),
+              deliveredAt: Date.now(),
+              attempts: [
+                {
+                  result: 'failed',
+                  reason: 'customer_unavailable',
+                  note: 'Khách chưa nghe máy',
+                  attemptedAt: Date.now()
+                }
+              ]
+            }
+          })
+        }
+      });
+
+    jest
+      .spyOn(window, 'alert')
+      .mockImplementation(() => {});
+
+    jest
+      .spyOn(window, 'confirm')
+      .mockImplementation(() => true);
+
+    try {
+      render(<OrderAdminComponent />);
+
+      fireEvent.click(
+        await screen.findByText('Xem chi tiết')
+      );
+
+      const startButton =
+        await screen.findByRole('button', {
+          name: 'Bắt đầu giao hàng'
+        });
+
+      fireEvent.click(startButton);
+
+      await waitFor(() => {
+        expect(API.post).toHaveBeenCalledWith(
+          `/admin/orders/${ORDER_ID}/delivery/start`
+        );
+      });
+
+      const failButton =
+        await screen.findByRole('button', {
+          name: 'Giao chưa thành công'
+        });
+
+      expect(
+        screen.getByRole('button', {
+          name: 'Hoàn thành giao hàng'
+        })
+      ).toBeInTheDocument();
+
+      fireEvent.click(failButton);
+
+      const unavailableOption =
+        await screen.findByRole('option', {
+          name: 'Không liên hệ được khách'
+        });
+
+      fireEvent.change(
+        unavailableOption.parentElement,
+        {
+          target: {
+            value: 'customer_unavailable'
+          }
+        }
+      );
+
+      fireEvent.change(
+        screen.getByPlaceholderText(
+          'Ví dụ: Khách chưa nghe máy...'
+        ),
+        {
+          target: {
+            value: 'Khách chưa nghe máy'
+          }
+        }
+      );
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'Xác nhận giao chưa thành công'
+        })
+      );
+
+      await waitFor(() => {
+        expect(API.post).toHaveBeenNthCalledWith(
+          2,
+          `/admin/orders/${ORDER_ID}/delivery/fail`,
+          {
+            reason: 'customer_unavailable',
+            note: 'Khách chưa nghe máy'
+          }
+        );
+      });
+
+      expect(
+        await screen.findByRole('button', {
+          name: 'Giao chưa thành công'
+        })
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'Hoàn thành giao hàng'
+        })
+      );
+
+      await waitFor(() => {
+        expect(API.post).toHaveBeenNthCalledWith(
+          3,
+          `/admin/orders/${ORDER_ID}/delivery/complete`
+        );
+      });
+
+      expect(
+        await screen.findByText(
+          'Đơn hàng đã được giao thành công.'
+        )
+      ).toBeInTheDocument();
+
+      expect(API.post).toHaveBeenCalledTimes(3);
+    } finally {
+      window.alert.mockRestore();
+      window.confirm.mockRestore();
+    }
   }
 );

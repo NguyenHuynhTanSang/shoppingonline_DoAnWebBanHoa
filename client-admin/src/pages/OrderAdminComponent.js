@@ -33,6 +33,25 @@ const isCanceledOrder = (orderOrStatus) => {
 const isDeliveryAssignableStatus = (status) =>
   ['approved', 'preparing'].includes(normalizeStatus(status));
 
+const DELIVERY_FAILURE_OPTIONS = [
+  {
+    value: 'customer_unavailable',
+    label: 'Không liên hệ được khách'
+  },
+  {
+    value: 'customer_rescheduled',
+    label: 'Khách hẹn giao lại'
+  },
+  {
+    value: 'delivery_issue',
+    label: 'Sự cố giao hàng'
+  },
+  {
+    value: 'other',
+    label: 'Lý do khác'
+  }
+];
+
 const getStoredAdminRole = () => {
   const directRole = String(
     localStorage.getItem('adminRole') || ''
@@ -66,6 +85,28 @@ const getStoredAdminRole = () => {
   return '';
 };
 
+const getStoredAdminUser = () => {
+  for (const key of ['adminUser', 'admin']) {
+    try {
+      const raw = localStorage.getItem(key);
+
+      if (!raw) {
+        continue;
+      }
+
+      const parsed = JSON.parse(raw);
+
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    } catch {
+      // Ignore malformed legacy localStorage values.
+    }
+  }
+
+  return null;
+};
+
 function OrderAdminComponent() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,9 +118,57 @@ function OrderAdminComponent() {
   const [staffLoading, setStaffLoading] = useState(false);
   const [selectedDeliveryStaff, setSelectedDeliveryStaff] = useState({});
   const [deliveryAssignmentBusy, setDeliveryAssignmentBusy] = useState({});
+  const [deliveryActionBusy, setDeliveryActionBusy] = useState({});
+  const [deliveryFailureDrafts, setDeliveryFailureDrafts] = useState({});
 
   const currentRole = useMemo(() => getStoredAdminRole(), []);
-  const isAdmin = currentRole === 'admin';
+const currentUser = useMemo(() => getStoredAdminUser(), []);
+
+const currentStaffId =
+  currentRole === 'staff'
+    ? String(
+        currentUser?._id ||
+        currentUser?.id ||
+        ''
+      )
+    : '';
+
+const isAdmin = currentRole === 'admin';
+const isStaff = currentRole === 'staff';
+
+const isAssignedToCurrentStaff = (order) => {
+  if (!isStaff || !currentStaffId) {
+    return false;
+  }
+
+  const assignedStaffId =
+    order?.delivery?.assignedStaff?.id;
+
+  return (
+    assignedStaffId &&
+    String(assignedStaffId) === String(currentStaffId)
+  );
+};
+
+const setDeliveryActionLoading = (orderId, value) => {
+  setDeliveryActionBusy((previous) => ({
+    ...previous,
+    [orderId]: value
+  }));
+};
+
+const updateDeliveryFailureDraft = (orderId, patch) => {
+  setDeliveryFailureDrafts((previous) => ({
+    ...previous,
+    [orderId]: {
+      open: false,
+      reason: '',
+      note: '',
+      ...(previous[orderId] || {}),
+      ...patch
+    }
+  }));
+};
 
   const [searchText, setSearchText] = useState(() => {
     return localStorage.getItem('adminOrderCustomerKeyword') || '';
@@ -334,9 +423,17 @@ function OrderAdminComponent() {
 
     setOrders((prev) =>
       prev.map((order) =>
-        order._id === savedOrder._id ? savedOrder : order
+        order._id === savedOrder._id
+          ? savedOrder
+          : order
       )
     );
+
+    setSelectedStatuses((prev) => ({
+      ...prev,
+      [savedOrder._id]:
+        savedOrder.status || 'pending'
+    }));
 
     setSelectedDeliveryStaff((prev) => ({
       ...prev,
@@ -483,6 +580,207 @@ function OrderAdminComponent() {
       }));
     }
   };
+  const handleStartDelivery = async (order) => {
+  if (
+    !order?._id ||
+    !isAssignedToCurrentStaff(order)
+  ) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    'Bắt đầu giao đơn hàng này?'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setDeliveryActionLoading(
+      order._id,
+      'start'
+    );
+
+    const res = await API.post(
+      `/admin/orders/${order._id}/delivery/start`
+    );
+
+    if (res.data?.order) {
+      replaceOrderFromResponse(
+        res.data.order
+      );
+    }
+
+    alert(
+      res.data?.message ||
+      'Đã bắt đầu giao hàng.'
+    );
+  } catch (error) {
+    console.error(
+      'START DELIVERY ERROR:',
+      error
+    );
+
+    alert(
+      error.response?.data?.message ||
+      'Không thể bắt đầu giao hàng.'
+    );
+  } finally {
+    setDeliveryActionLoading(
+      order._id,
+      ''
+    );
+  }
+};
+
+const handleFailDelivery = async (order) => {
+  if (
+    !order?._id ||
+    !isAssignedToCurrentStaff(order)
+  ) {
+    return;
+  }
+
+  const draft =
+    deliveryFailureDrafts[order._id] || {};
+
+  const reason = String(
+    draft.reason || ''
+  ).trim();
+
+  const note = String(
+    draft.note || ''
+  ).trim();
+
+  if (!reason) {
+    alert(
+      'Vui lòng chọn lý do giao hàng chưa thành công.'
+    );
+    return;
+  }
+
+  if (note.length > 300) {
+    alert(
+      'Ghi chú giao hàng không được quá 300 ký tự.'
+    );
+    return;
+  }
+
+  const confirmed = window.confirm(
+    'Xác nhận ghi nhận lần giao hàng chưa thành công?'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setDeliveryActionLoading(
+      order._id,
+      'fail'
+    );
+
+    const res = await API.post(
+      `/admin/orders/${order._id}/delivery/fail`,
+      {
+        reason,
+        note
+      }
+    );
+
+    if (res.data?.order) {
+      replaceOrderFromResponse(
+        res.data.order
+      );
+    }
+
+    setDeliveryFailureDrafts(
+      (previous) => ({
+        ...previous,
+        [order._id]: {
+          open: false,
+          reason: '',
+          note: ''
+        }
+      })
+    );
+
+    alert(
+      res.data?.message ||
+      'Đã ghi nhận giao hàng chưa thành công.'
+    );
+  } catch (error) {
+    console.error(
+      'FAIL DELIVERY ERROR:',
+      error
+    );
+
+    alert(
+      error.response?.data?.message ||
+      'Không thể ghi nhận giao hàng chưa thành công.'
+    );
+  } finally {
+    setDeliveryActionLoading(
+      order._id,
+      ''
+    );
+  }
+};
+
+const handleCompleteDelivery = async (order) => {
+  if (
+    !order?._id ||
+    !isAssignedToCurrentStaff(order)
+  ) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    'Xác nhận đơn hàng đã được giao thành công?'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setDeliveryActionLoading(
+      order._id,
+      'complete'
+    );
+
+    const res = await API.post(
+      `/admin/orders/${order._id}/delivery/complete`
+    );
+
+    if (res.data?.order) {
+      replaceOrderFromResponse(
+        res.data.order
+      );
+    }
+
+    alert(
+      res.data?.message ||
+      'Giao hàng thành công.'
+    );
+  } catch (error) {
+    console.error(
+      'COMPLETE DELIVERY ERROR:',
+      error
+    );
+
+    alert(
+      error.response?.data?.message ||
+      'Không thể hoàn thành giao hàng.'
+    );
+  } finally {
+    setDeliveryActionLoading(
+      order._id,
+      ''
+    );
+  }
+};
 
   const handleBulkUpdateStatus = async () => {
     try {
@@ -1041,6 +1339,24 @@ WIND FLOWER`;
               const isAssignmentBusy = Boolean(
                 deliveryAssignmentBusy[order._id]
               );
+              const orderStatus =
+  normalizeStatus(order.status);
+
+const assignedToCurrentStaff =
+  isAssignedToCurrentStaff(order);
+
+const deliveryBusyAction =
+  deliveryActionBusy[order._id] || '';
+
+const isDeliveryActionBusy =
+  Boolean(deliveryBusyAction);
+
+const failureDraft =
+  deliveryFailureDrafts[order._id] || {
+    open: false,
+    reason: '',
+    note: ''
+  };
 
               return (
                 <div className="admin-order-card" key={order._id}>
@@ -1300,6 +1616,259 @@ WIND FLOWER`;
                       </div>
 
                       <div className="admin-order-timeline-wrap">
+                        {isStaff && (
+  <div
+    style={{
+      marginTop: '18px',
+      padding: '16px',
+      border: '1px solid #dbeafe',
+      borderRadius: '12px',
+      background: '#f8fbff'
+    }}
+  >
+    <h4
+      style={{
+        marginTop: 0,
+        marginBottom: '12px'
+      }}
+    >
+      Thao tác giao hàng
+    </h4>
+
+    {!assignedStaffId ? (
+      <p
+        style={{
+          margin: 0,
+          color: '#6b7280'
+        }}
+      >
+        Đơn hàng chưa được admin phân công nhân viên giao hàng.
+      </p>
+    ) : !assignedToCurrentStaff ? (
+      <p
+        style={{
+          margin: 0,
+          color: '#6b7280'
+        }}
+      >
+        Đơn hàng này được phân công cho nhân viên khác.
+      </p>
+    ) : orderStatus === 'approved' ? (
+      <p
+        style={{
+          margin: 0,
+          color: '#6b7280'
+        }}
+      >
+        Hãy chuyển đơn sang trạng thái “Đang chuẩn bị” trước khi bắt đầu giao.
+      </p>
+    ) : orderStatus === 'preparing' ? (
+      <button
+        type="button"
+        onClick={() =>
+          handleStartDelivery(order)
+        }
+        disabled={isDeliveryActionBusy}
+      >
+        {deliveryBusyAction === 'start'
+          ? 'Đang bắt đầu giao...'
+          : 'Bắt đầu giao hàng'}
+      </button>
+    ) : orderStatus === 'delivering' ? (
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap'
+          }}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              updateDeliveryFailureDraft(
+                order._id,
+                {
+                  open: !failureDraft.open
+                }
+              )
+            }
+            disabled={isDeliveryActionBusy}
+          >
+            Giao chưa thành công
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleCompleteDelivery(order)
+            }
+            disabled={isDeliveryActionBusy}
+          >
+            {deliveryBusyAction === 'complete'
+              ? 'Đang hoàn thành...'
+              : 'Hoàn thành giao hàng'}
+          </button>
+        </div>
+
+        {failureDraft.open && (
+          <div
+            style={{
+              marginTop: '14px',
+              padding: '14px',
+              border: '1px solid #fde68a',
+              borderRadius: '10px',
+              background: '#fffbeb'
+            }}
+          >
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontWeight: 600
+              }}
+            >
+              Lý do giao chưa thành công
+            </label>
+
+            <select
+              value={failureDraft.reason || ''}
+              onChange={(e) =>
+                updateDeliveryFailureDraft(
+                  order._id,
+                  {
+                    reason: e.target.value
+                  }
+                )
+              }
+              disabled={isDeliveryActionBusy}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                marginBottom: '12px'
+              }}
+            >
+              <option value="">
+                -- Chọn lý do --
+              </option>
+
+              {DELIVERY_FAILURE_OPTIONS.map(
+                (option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </option>
+                )
+              )}
+            </select>
+
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontWeight: 600
+              }}
+            >
+              Ghi chú
+            </label>
+
+            <textarea
+              rows="3"
+              maxLength={300}
+              placeholder="Ví dụ: Khách chưa nghe máy..."
+              value={failureDraft.note || ''}
+              onChange={(e) =>
+                updateDeliveryFailureDraft(
+                  order._id,
+                  {
+                    note: e.target.value
+                  }
+                )
+              }
+              disabled={isDeliveryActionBusy}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                resize: 'vertical'
+              }}
+            />
+
+            <div
+              style={{
+                marginTop: '4px',
+                marginBottom: '12px',
+                textAlign: 'right',
+                color: '#6b7280',
+                fontSize: '13px'
+              }}
+            >
+              {(failureDraft.note || '').length}/300
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px',
+                flexWrap: 'wrap'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  handleFailDelivery(order)
+                }
+                disabled={
+                  isDeliveryActionBusy ||
+                  !failureDraft.reason
+                }
+              >
+                {deliveryBusyAction === 'fail'
+                  ? 'Đang ghi nhận...'
+                  : 'Xác nhận giao chưa thành công'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  updateDeliveryFailureDraft(
+                    order._id,
+                    {
+                      open: false
+                    }
+                  )
+                }
+                disabled={isDeliveryActionBusy}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    ) : orderStatus === 'completed' ? (
+      <p
+        style={{
+          margin: 0,
+          color: '#15803d',
+          fontWeight: 600
+        }}
+      >
+        Đơn hàng đã được giao thành công.
+      </p>
+    ) : (
+      <p
+        style={{
+          margin: 0,
+          color: '#6b7280'
+        }}
+      >
+        Hiện chưa có thao tác giao hàng cho trạng thái này.
+      </p>
+    )}
+  </div>
+)}
                         <h4>Tiến trình đơn hàng</h4>
                         {renderTimeline(order.status)}
                       </div>
@@ -1334,7 +1903,30 @@ WIND FLOWER`;
                         })}
                       </div>
 
-                      <div className="admin-order-actions">
+                      {isStaff &&
+  ['preparing', 'delivering'].includes(orderStatus) && (
+    <div className="admin-order-actions">
+      <p
+        style={{
+          margin: 0,
+          color: '#6b7280'
+        }}
+      >
+        Nhân viên sử dụng mục “Thao tác giao hàng” phía trên để xử lý đơn này.
+      </p>
+    </div>
+  )}
+
+<div
+  className="admin-order-actions"
+  style={{
+    display:
+      isStaff &&
+      ['preparing', 'delivering'].includes(orderStatus)
+        ? 'none'
+        : undefined
+  }}
+>
                         <select
                           value={selectedStatuses[order._id] || order.status || 'pending'}
                           onChange={(e) => handleStatusChange(order._id, e.target.value)}
