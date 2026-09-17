@@ -30,12 +30,56 @@ const isCanceledOrder = (orderOrStatus) => {
   );
 };
 
+const isDeliveryAssignableStatus = (status) =>
+  ['approved', 'preparing'].includes(normalizeStatus(status));
+
+const getStoredAdminRole = () => {
+  const directRole = String(
+    localStorage.getItem('adminRole') || ''
+  )
+    .trim()
+    .toLowerCase();
+
+  if (directRole) {
+    return directRole;
+  }
+
+  for (const key of ['adminUser', 'admin']) {
+    try {
+      const raw = localStorage.getItem(key);
+
+      if (!raw) continue;
+
+      const parsed = JSON.parse(raw);
+      const role = String(parsed?.role || '')
+        .trim()
+        .toLowerCase();
+
+      if (role) {
+        return role;
+      }
+    } catch {
+      // Ignore malformed legacy localStorage values.
+    }
+  }
+
+  return '';
+};
+
 function OrderAdminComponent() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openOrderId, setOpenOrderId] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState({});
   const [selectedIds, setSelectedIds] = useState([]);
+
+  const [staffs, setStaffs] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [selectedDeliveryStaff, setSelectedDeliveryStaff] = useState({});
+  const [deliveryAssignmentBusy, setDeliveryAssignmentBusy] = useState({});
+
+  const currentRole = useMemo(() => getStoredAdminRole(), []);
+  const isAdmin = currentRole === 'admin';
 
   const [searchText, setSearchText] = useState(() => {
     return localStorage.getItem('adminOrderCustomerKeyword') || '';
@@ -74,10 +118,17 @@ function OrderAdminComponent() {
         setOrders(data);
 
         const initStatuses = {};
+        const initDeliveryStaff = {};
+
         data.forEach((order) => {
           initStatuses[order._id] = order.status || 'pending';
+          initDeliveryStaff[order._id] = String(
+            order.delivery?.assignedStaff?.id || ''
+          );
         });
+
         setSelectedStatuses(initStatuses);
+        setSelectedDeliveryStaff(initDeliveryStaff);
       } else {
         setOrders([]);
         alert(res.data?.message || 'Không tải được danh sách đơn hàng.');
@@ -91,9 +142,45 @@ function OrderAdminComponent() {
     }
   }, []);
 
+  const loadStaffs = useCallback(async () => {
+    if (!isAdmin) {
+      setStaffs([]);
+      return;
+    }
+
+    try {
+      setStaffLoading(true);
+      const res = await API.get('/admin/staffs');
+
+      if (res.data?.success) {
+        const activeStaffs = (res.data.staffs || []).filter(
+          (staff) => Number(staff.active) === 1
+        );
+
+        setStaffs(activeStaffs);
+      } else {
+        setStaffs([]);
+        alert(res.data?.message || 'Không tải được danh sách nhân viên.');
+      }
+    } catch (err) {
+      console.error('Load staffs error:', err);
+      setStaffs([]);
+      alert(
+        err.response?.data?.message ||
+          'Không tải được danh sách nhân viên giao hàng.'
+      );
+    } finally {
+      setStaffLoading(false);
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    loadStaffs();
+  }, [loadStaffs]);
 
   useEffect(() => {
     const savedKeyword = localStorage.getItem('adminOrderCustomerKeyword');
@@ -237,6 +324,163 @@ function OrderAdminComponent() {
     } catch (err) {
       console.error('Update status error:', err);
       alert(err.response?.data?.message || 'Lỗi cập nhật trạng thái đơn hàng.');
+    }
+  };
+
+  const replaceOrderFromResponse = (savedOrder) => {
+    if (!savedOrder?._id) {
+      return;
+    }
+
+    setOrders((prev) =>
+      prev.map((order) =>
+        order._id === savedOrder._id ? savedOrder : order
+      )
+    );
+
+    setSelectedDeliveryStaff((prev) => ({
+      ...prev,
+      [savedOrder._id]: String(
+        savedOrder.delivery?.assignedStaff?.id || ''
+      )
+    }));
+  };
+
+  const handleDeliveryStaffChange = (orderId, staffId) => {
+    setSelectedDeliveryStaff((prev) => ({
+      ...prev,
+      [orderId]: staffId
+    }));
+  };
+
+  const handleAssignDeliveryStaff = async (order) => {
+    if (!isAdmin) {
+      alert('Chỉ admin mới được phân công nhân viên giao hàng.');
+      return;
+    }
+
+    if (!isDeliveryAssignableStatus(order.status)) {
+      alert(
+        'Chỉ có thể phân công khi đơn đã xác nhận hoặc đang chuẩn bị.'
+      );
+      return;
+    }
+
+    const orderId = order._id;
+    const staffId = String(
+      selectedDeliveryStaff[orderId] || ''
+    ).trim();
+
+    if (!staffId) {
+      alert('Vui lòng chọn nhân viên giao hàng.');
+      return;
+    }
+
+    const currentStaffId = String(
+      order.delivery?.assignedStaff?.id || ''
+    );
+
+    if (currentStaffId === staffId) {
+      alert('Nhân viên này đã được phân công cho đơn hàng.');
+      return;
+    }
+
+    if (currentStaffId) {
+      const ok = window.confirm(
+        `Đơn hiện đang được giao cho ${
+          order.delivery?.assignedStaff?.name || 'nhân viên khác'
+        }. Bạn có chắc muốn đổi nhân viên không?`
+      );
+
+      if (!ok) return;
+    }
+
+    try {
+      setDeliveryAssignmentBusy((prev) => ({
+        ...prev,
+        [orderId]: true
+      }));
+
+      const res = await API.put(
+        `/admin/orders/${orderId}/delivery/assignment`,
+        { staffId }
+      );
+
+      if (!res.data?.success) {
+        alert(res.data?.message || 'Phân công nhân viên thất bại.');
+        return;
+      }
+
+      replaceOrderFromResponse(res.data.order);
+      alert(
+        currentStaffId
+          ? 'Đổi nhân viên giao hàng thành công!'
+          : 'Phân công nhân viên giao hàng thành công!'
+      );
+    } catch (err) {
+      console.error('Assign delivery staff error:', err);
+      alert(
+        err.response?.data?.message ||
+          'Không thể phân công nhân viên giao hàng.'
+      );
+    } finally {
+      setDeliveryAssignmentBusy((prev) => ({
+        ...prev,
+        [orderId]: false
+      }));
+    }
+  };
+
+  const handleClearDeliveryAssignment = async (order) => {
+    if (!isAdmin) {
+      alert('Chỉ admin mới được bỏ phân công giao hàng.');
+      return;
+    }
+
+    if (!isDeliveryAssignableStatus(order.status)) {
+      alert(
+        'Không thể thay đổi phân công khi đơn đã bắt đầu giao hoặc đã kết thúc.'
+      );
+      return;
+    }
+
+    const assignedName =
+      order.delivery?.assignedStaff?.name || 'nhân viên hiện tại';
+
+    const ok = window.confirm(
+      `Bạn có chắc muốn bỏ phân công ${assignedName} khỏi đơn hàng này không?`
+    );
+
+    if (!ok) return;
+
+    try {
+      setDeliveryAssignmentBusy((prev) => ({
+        ...prev,
+        [order._id]: true
+      }));
+
+      const res = await API.delete(
+        `/admin/orders/${order._id}/delivery/assignment`
+      );
+
+      if (!res.data?.success) {
+        alert(res.data?.message || 'Bỏ phân công thất bại.');
+        return;
+      }
+
+      replaceOrderFromResponse(res.data.order);
+      alert('Đã bỏ phân công nhân viên giao hàng.');
+    } catch (err) {
+      console.error('Clear delivery assignment error:', err);
+      alert(
+        err.response?.data?.message ||
+          'Không thể bỏ phân công nhân viên giao hàng.'
+      );
+    } finally {
+      setDeliveryAssignmentBusy((prev) => ({
+        ...prev,
+        [order._id]: false
+      }));
     }
   };
 
@@ -787,6 +1031,17 @@ WIND FLOWER`;
                 order.customerInfo?.email || order.customer?.email || '';
               const isCanceled = isCanceledOrder(order);
 
+              const assignedStaff = order.delivery?.assignedStaff || null;
+              const assignedStaffId = String(assignedStaff?.id || '');
+              const selectedStaffId = String(
+                selectedDeliveryStaff[order._id] || ''
+              );
+              const canEditDeliveryAssignment =
+                isAdmin && isDeliveryAssignableStatus(order.status);
+              const isAssignmentBusy = Boolean(
+                deliveryAssignmentBusy[order._id]
+              );
+
               return (
                 <div className="admin-order-card" key={order._id}>
                   <div
@@ -829,6 +1084,12 @@ WIND FLOWER`;
                             ? formatPaymentMethod(paymentMethod)
                             : 'Chưa có thanh toán'}
                         </span>
+
+                        {assignedStaff?.name && (
+                          <span className="admin-mini-badge">
+                            Giao: {assignedStaff.name}
+                          </span>
+                        )}
 
                         {noteText && (
                           <span className="admin-mini-badge note">Có ghi chú</span>
@@ -897,6 +1158,145 @@ WIND FLOWER`;
                         <p><strong>Mã giảm giá:</strong> {order.voucherCode || 'Không có'}</p>
                         <p><strong>Ghi chú cho shop:</strong> {noteText || 'Không có'}</p>
                         <p><strong>Email khách:</strong> {customerEmail || 'Chưa có'}</p>
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: '18px',
+                          padding: '16px',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '12px',
+                          background: '#fafafa'
+                        }}
+                      >
+                        <h4 style={{ marginTop: 0, marginBottom: '12px' }}>
+                          Phân công giao hàng
+                        </h4>
+
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                              'repeat(auto-fit, minmax(220px, 1fr))',
+                            gap: '8px',
+                            marginBottom: '12px'
+                          }}
+                        >
+                          <p style={{ margin: 0 }}>
+                            <strong>Nhân viên:</strong>{' '}
+                            {assignedStaff?.name || 'Chưa phân công'}
+                          </p>
+
+                          <p style={{ margin: 0 }}>
+                            <strong>Phân công lúc:</strong>{' '}
+                            {order.delivery?.assignedAt
+                              ? formatDate(order.delivery.assignedAt)
+                              : 'Chưa có'}
+                          </p>
+                        </div>
+
+                        {isAdmin ? (
+                          canEditDeliveryAssignment ? (
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: '10px',
+                                flexWrap: 'wrap',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <select
+                                value={selectedStaffId}
+                                onChange={(e) =>
+                                  handleDeliveryStaffChange(
+                                    order._id,
+                                    e.target.value
+                                  )
+                                }
+                                disabled={staffLoading || isAssignmentBusy}
+                                style={{
+                                  minWidth: '240px',
+                                  padding: '10px 12px'
+                                }}
+                              >
+                                <option value="">
+                                  {staffLoading
+                                    ? 'Đang tải nhân viên...'
+                                    : '-- Chọn nhân viên giao hàng --'}
+                                </option>
+
+                                {staffs.map((staff) => (
+                                  <option key={staff._id} value={staff._id}>
+                                    {staff.name || staff.username}
+                                  </option>
+                                ))}
+                              </select>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleAssignDeliveryStaff(order)
+                                }
+                                disabled={
+                                  isAssignmentBusy ||
+                                  !selectedStaffId ||
+                                  selectedStaffId === assignedStaffId
+                                }
+                                style={{
+                                  opacity:
+                                    isAssignmentBusy ||
+                                    !selectedStaffId ||
+                                    selectedStaffId === assignedStaffId
+                                      ? 0.6
+                                      : 1,
+                                  cursor:
+                                    isAssignmentBusy ||
+                                    !selectedStaffId ||
+                                    selectedStaffId === assignedStaffId
+                                      ? 'not-allowed'
+                                      : 'pointer'
+                                }}
+                              >
+                                {isAssignmentBusy
+                                  ? 'Đang xử lý...'
+                                  : assignedStaffId
+                                    ? 'Đổi nhân viên'
+                                    : 'Phân công'}
+                              </button>
+
+                              {assignedStaffId && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleClearDeliveryAssignment(order)
+                                  }
+                                  disabled={isAssignmentBusy}
+                                  style={{
+                                    background: '#fff',
+                                    color: '#be123c',
+                                    border: '1px solid #fecdd3',
+                                    opacity: isAssignmentBusy ? 0.6 : 1,
+                                    cursor: isAssignmentBusy
+                                      ? 'not-allowed'
+                                      : 'pointer'
+                                  }}
+                                >
+                                  Bỏ phân công
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <p style={{ margin: 0, color: '#6b7280' }}>
+                              Chỉ có thể thay đổi nhân viên khi đơn ở trạng thái
+                              “Đã xác nhận” hoặc “Đang chuẩn bị”.
+                            </p>
+                          )
+                        ) : (
+                          <p style={{ margin: 0, color: '#6b7280' }}>
+                            Chỉ admin được phân công hoặc thay đổi nhân viên giao
+                            hàng.
+                          </p>
+                        )}
                       </div>
 
                       <div className="admin-order-timeline-wrap">
