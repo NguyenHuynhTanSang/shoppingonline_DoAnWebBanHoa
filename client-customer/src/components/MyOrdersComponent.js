@@ -89,6 +89,70 @@ function formatOrderDate(value) {
     'vi-VN'
   );
 }
+const DELIVERY_TRACKING_STEPS = [
+  {
+    key: 'approved',
+    label: 'Đã xác nhận'
+  },
+  {
+    key: 'preparing',
+    label: 'Đang chuẩn bị'
+  },
+  {
+    key: 'delivering',
+    label: 'Đang giao hàng'
+  },
+  {
+    key: 'completed',
+    label: 'Giao thành công'
+  }
+];
+
+function getDeliveryProgressIndex(status) {
+  const normalized =
+    String(status || '')
+      .trim()
+      .toLowerCase();
+
+  const statusIndex = {
+    approved: 0,
+    preparing: 1,
+    delivering: 2,
+    completed: 3
+  };
+
+  return Object.prototype.hasOwnProperty.call(
+    statusIndex,
+    normalized
+  )
+    ? statusIndex[normalized]
+    : -1;
+}
+
+function getDeliveryTrackingTime(
+  order,
+  stepKey
+) {
+  if (
+    stepKey === 'delivering'
+  ) {
+    return (
+      order?.deliveryTracking
+        ?.startedAt || null
+    );
+  }
+
+  if (
+    stepKey === 'completed'
+  ) {
+    return (
+      order?.deliveryTracking
+        ?.deliveredAt || null
+    );
+  }
+
+  return null;
+}
 
 function getReviewKey(
   orderId,
@@ -1417,6 +1481,196 @@ function MyOrdersComponent() {
                             </div>
                           </div>
                         </section>
+                        <section className="wf-order-details-section">
+  <div className="wf-order-section-heading">
+    <span>
+      THEO DÕI
+    </span>
+
+    <h3>
+      Tiến trình giao hàng
+    </h3>
+  </div>
+
+  {String(
+    order.status || ''
+  ).toLowerCase() ===
+  'canceled' ? (
+    <div
+      className="wf-order-detail-item wf-order-detail-item-wide"
+      style={{
+        border:
+          '1px solid #fecdd3',
+        background:
+          '#fff1f2'
+      }}
+    >
+      <span>
+        Trạng thái
+      </span>
+
+      <strong>
+        Đơn hàng đã được hủy
+      </strong>
+    </div>
+  ) : (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns:
+          'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: '12px'
+      }}
+    >
+      {DELIVERY_TRACKING_STEPS.map(
+        (
+          step,
+          index
+        ) => {
+          const progressIndex =
+            getDeliveryProgressIndex(
+              order.status
+            );
+
+          const reached =
+            progressIndex >=
+            index;
+
+          const current =
+            progressIndex ===
+            index;
+
+          const timestamp =
+            getDeliveryTrackingTime(
+              order,
+              step.key
+            );
+
+          return (
+            <div
+              key={
+                step.key
+              }
+              className="wf-order-detail-item"
+              style={{
+                border:
+                  reached
+                    ? '1px solid #86efac'
+                    : '1px solid #e5e7eb',
+
+                background:
+                  reached
+                    ? '#f0fdf4'
+                    : '#ffffff'
+              }}
+            >
+              <div
+                style={{
+                  display:
+                    'flex',
+                  alignItems:
+                    'center',
+                  gap: '8px'
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius:
+                      '50%',
+                    display:
+                      'inline-flex',
+                    alignItems:
+                      'center',
+                    justifyContent:
+                      'center',
+                    fontWeight:
+                      700,
+                    border:
+                      '1px solid #d1d5db'
+                  }}
+                >
+                  {reached
+                    ? '✓'
+                    : index +
+                      1}
+                </span>
+
+                <strong>
+                  {
+                    step.label
+                  }
+                </strong>
+              </div>
+
+              {timestamp ? (
+                <span>
+                  {formatOrderDate(
+                    timestamp
+                  )}
+                </span>
+              ) : current ? (
+                <span>
+                  Đang xử lý
+                </span>
+              ) : reached ? (
+                <span>
+                  Đã hoàn tất
+                </span>
+              ) : (
+                <span>
+                  Chưa tới bước này
+                </span>
+              )}
+            </div>
+          );
+        }
+      )}
+    </div>
+  )}
+
+  {order.deliveryTracking
+    ?.startedAt && (
+    <p
+      style={{
+        margin:
+          '14px 0 0'
+      }}
+    >
+      <strong>
+        Bắt đầu giao:{' '}
+      </strong>
+
+      {formatOrderDate(
+        order
+          .deliveryTracking
+          .startedAt
+      )}
+    </p>
+  )}
+
+  {order.deliveryTracking
+    ?.deliveredAt && (
+    <p
+      style={{
+        margin:
+          '6px 0 0'
+      }}
+    >
+      <strong>
+        Giao thành công:{' '}
+      </strong>
+
+      {formatOrderDate(
+        order
+          .deliveryTracking
+          .deliveredAt
+      )}
+    </p>
+  )}
+</section>
 
                         <section className="wf-order-details-section">
                           <div className="wf-order-section-heading">

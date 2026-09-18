@@ -112,3 +112,65 @@ test.each(['bank', 'momo'])('checkout %s acknowledgement is demo-only and sends 
   await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/order-success'));
   expect(JSON.parse(localStorage.getItem('latestOrder')).paymentStatus).toBe('Thanh toán demo - chưa xác minh');
 });
+test('customer order history shows safe delivery tracking progress and timestamps', async () => {
+  const startedAt = 1789701000000;
+  const deliveredAt = 1789704600000;
+
+  const trackedOrder = {
+    ...order,
+    status: 'completed',
+    deliveryTracking: {
+      startedAt,
+      deliveredAt
+    }
+  };
+
+  API.get.mockResolvedValue({
+    data: {
+      success: true,
+      orders: [trackedOrder]
+    }
+  });
+
+  render(<MyOrdersComponent />);
+
+  expect(
+    await screen.findByText('Tiến trình giao hàng')
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getAllByText('Đã xác nhận').length
+  ).toBeGreaterThan(0);
+
+  expect(
+    screen.getAllByText('Đang chuẩn bị').length
+  ).toBeGreaterThan(0);
+
+  expect(
+    screen.getAllByText('Đang giao hàng').length
+  ).toBeGreaterThan(0);
+
+  expect(
+    screen.getByText('Giao thành công')
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText('Bắt đầu giao:')
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText('Giao thành công:')
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getAllByText(
+      new Date(startedAt).toLocaleString('vi-VN')
+    ).length
+  ).toBeGreaterThan(0);
+
+  expect(
+    screen.getAllByText(
+      new Date(deliveredAt).toLocaleString('vi-VN')
+    ).length
+  ).toBeGreaterThan(0);
+});

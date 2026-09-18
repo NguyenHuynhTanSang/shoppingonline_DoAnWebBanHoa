@@ -71,9 +71,25 @@ function sanitizeOrderForCustomer(orderDoc) {
   const order = toPlainObject(orderDoc) || {};
   const safeOrder = { ...order };
 
-  // Operational delivery metadata is internal.
-  // DELIVERY-005 will expose an explicit customer-safe tracking projection.
+  const delivery =
+    order.delivery &&
+    typeof order.delivery === 'object'
+      ? order.delivery
+      : null;
+
+  // Never expose operational delivery metadata to customers.
   delete safeOrder.delivery;
+  delete safeOrder.deliveryTracking;
+
+  if (delivery) {
+    safeOrder.deliveryTracking = {
+      startedAt:
+        delivery.startedAt || null,
+
+      deliveredAt:
+        delivery.deliveredAt || null
+    };
+  }
 
   return safeOrder;
 }

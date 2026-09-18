@@ -207,3 +207,117 @@ test('HTTP ownership/auth and inconsistent voucher responses do not mutate state
     assert.equal('stack' in response.body, false);
   } finally { await api.close(); }
 });
+test('customer delivery tracking exposes only public timestamps', async () => {
+  const s = fixture(true, 'completed');
+
+  const startedAt = 1789701000000;
+  const deliveredAt = 1789704600000;
+
+  s.state.orders[orderId].delivery = {
+    assignedStaff: {
+      id: '6'.repeat(24),
+      name: 'Staff Internal'
+    },
+    assignedAt: 1789699000000,
+    assignedBy: {
+      id: '7'.repeat(24),
+      role: 'admin',
+      name: 'Admin Internal'
+    },
+    startedAt,
+    deliveredAt,
+    attempts: [
+      {
+        result: 'failed',
+        reason: 'customer_unavailable',
+        note: 'Internal delivery note',
+        attemptedAt: 1789702000000
+      }
+    ]
+  };
+
+  // Test helper không có Models.Order.find(),
+  // nên mock riêng customer order listing cho test này.
+  s.orderDAO.selectByCustID = async customerId => {
+    return Object.values(s.state.orders).filter(
+      order =>
+        String(order.customer?._id || '') ===
+        String(customerId)
+    );
+  };
+
+  const api = await http(s);
+
+  try {
+    const response = await api.request(
+      'customer/orders',
+      'GET'
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.success, true);
+
+    const order = response.body.orders.find(
+      item => item._id === orderId
+    );
+
+    assert.ok(order);
+
+    assert.deepEqual(order.deliveryTracking, {
+      startedAt,
+      deliveredAt
+    });
+
+    assert.equal('delivery' in order, false);
+
+    const serialized = JSON.stringify(order);
+
+    assert.equal(
+      serialized.includes('assignedStaff'),
+      false
+    );
+
+    assert.equal(
+      serialized.includes('assignedBy'),
+      false
+    );
+
+    assert.equal(
+      serialized.includes('attempts'),
+      false
+    );
+
+    assert.equal(
+      serialized.includes('Internal delivery note'),
+      false
+    );
+
+    assert.equal(
+      serialized.includes('customer_unavailable'),
+      false
+    );
+
+    // Legacy order không có delivery vẫn phải hoạt động.
+    delete s.state.orders[orderId].delivery;
+
+    const legacyResponse = await api.request(
+      'customer/orders',
+      'GET'
+    );
+
+    assert.equal(legacyResponse.status, 200);
+
+    const legacyOrder = legacyResponse.body.orders.find(
+      item => item._id === orderId
+    );
+
+    assert.ok(legacyOrder);
+    assert.equal(
+      'deliveryTracking' in legacyOrder,
+      false
+    );
+    assert.equal('delivery' in legacyOrder, false);
+  } finally {
+    await api.close();
+  }
+});
