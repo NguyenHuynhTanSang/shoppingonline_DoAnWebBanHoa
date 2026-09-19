@@ -200,6 +200,36 @@ async appendDeliveryAttempt(_id, staffId, attempt) {
       'customer._id': new mongoose.Types.ObjectId(_cid)
     }).sort({ cdate: -1 }).exec();
   },
+    async selectByAssignedStaff(_staffId) {
+    if (
+      typeof _staffId !== 'string' ||
+      !/^[a-f\d]{24}$/i.test(_staffId)
+    ) {
+      return [];
+    }
+
+    return Models.Order.find({
+      'delivery.assignedStaff.id': new mongoose.Types.ObjectId(_staffId)
+    }).sort({ cdate: -1 }).exec();
+  },
+
+  async selectByAssignedStaffAndCustomer(_staffId, _cid) {
+    if (
+      ![_staffId, _cid].every(
+        id =>
+          typeof id === 'string' &&
+          /^[a-f\d]{24}$/i.test(id)
+      )
+    ) {
+      return [];
+    }
+
+    return Models.Order.find({
+      'delivery.assignedStaff.id': new mongoose.Types.ObjectId(_staffId),
+      'customer._id': new mongoose.Types.ObjectId(_cid)
+    }).sort({ cdate: -1 }).exec();
+  },
+
 
   async selectAll() {
     return Models.Order.find({}).sort({ cdate: -1 }).exec();

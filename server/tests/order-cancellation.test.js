@@ -321,3 +321,143 @@ test('customer delivery tracking exposes only public timestamps', async () => {
     await api.close();
   }
 });
+test('staff order listing is scoped to assigned deliveries', async () => {
+  const s = fixture(true, 'approved');
+
+  const staffA = '6'.repeat(24);
+  const staffB = '7'.repeat(24);
+
+  const orderA = orderId;
+  const orderB = '8'.repeat(24);
+  const unassignedOrder = '9'.repeat(24);
+
+  s.state.orders[orderA] = {
+    ...s.state.orders[orderA],
+    _id: orderA,
+    status: 'preparing',
+    delivery: {
+      assignedStaff: {
+        id: staffA,
+        name: 'Staff A'
+      }
+    }
+  };
+
+  s.state.orders[orderB] = {
+    ...s.state.orders[orderA],
+    _id: orderB,
+    delivery: {
+      assignedStaff: {
+        id: staffB,
+        name: 'Staff B'
+      }
+    }
+  };
+
+  s.state.orders[unassignedOrder] = {
+    ...s.state.orders[orderA],
+    _id: unassignedOrder,
+    delivery: undefined
+  };
+
+  s.orderDAO.selectAll = async () => {
+    return Object.values(s.state.orders);
+  };
+
+  s.orderDAO.selectByAssignedStaff = async staffId => {
+    return Object.values(s.state.orders).filter(
+      order =>
+        String(order.delivery?.assignedStaff?.id || '') ===
+        String(staffId)
+    );
+  };
+
+  s.orderDAO.selectByAssignedStaffAndCustomer = async (
+    staffId,
+    customerId
+  ) => {
+    return Object.values(s.state.orders).filter(
+      order =>
+        String(order.delivery?.assignedStaff?.id || '') ===
+          String(staffId) &&
+        String(order.customer?._id || '') ===
+          String(customerId)
+    );
+  };
+
+  s.orderDAO.selectByCustID = async customerId => {
+    return Object.values(s.state.orders).filter(
+      order =>
+        String(order.customer?._id || '') ===
+        String(customerId)
+    );
+  };
+
+  const api = await http(s);
+
+  try {
+    const adminResponse = await api.request(
+      'admin/orders',
+      'GET',
+      undefined,
+      'admin'
+    );
+
+    assert.equal(adminResponse.status, 200);
+    assert.equal(adminResponse.body.orders.length, 3);
+
+    const staffAResponse = await api.request(
+      'admin/orders',
+      'GET',
+      undefined,
+      'staff',
+      staffA
+    );
+
+    assert.equal(staffAResponse.status, 200);
+
+    assert.deepEqual(
+      staffAResponse.body.orders.map(order => order._id),
+      [orderA]
+    );
+
+    const staffBResponse = await api.request(
+      'admin/orders',
+      'GET',
+      undefined,
+      'staff',
+      staffB
+    );
+
+    assert.equal(staffBResponse.status, 200);
+
+    assert.deepEqual(
+      staffBResponse.body.orders.map(order => order._id),
+      [orderB]
+    );
+
+    assert.equal(
+      staffAResponse.body.orders.some(
+        order => order._id === unassignedOrder
+      ),
+      false
+    );
+
+    const customerScopedResponse = await api.request(
+      `admin/orders/customer/${owner}`,
+      'GET',
+      undefined,
+      'staff',
+      staffA
+    );
+
+    assert.equal(customerScopedResponse.status, 200);
+
+    assert.deepEqual(
+      customerScopedResponse.body.orders.map(order => order._id),
+      [orderA]
+    );
+  } finally {
+    await api.close();
+  }
+});

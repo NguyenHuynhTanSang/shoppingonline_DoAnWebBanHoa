@@ -375,9 +375,11 @@ router.get(
           : await Models.Customer.find({}).exec();
 
       const orders =
-        typeof OrderDAO.selectAll === 'function'
-          ? await OrderDAO.selectAll()
-          : await Models.Order.find({}).exec();
+  req.decoded?.role === 'staff'
+    ? await OrderDAO.selectByAssignedStaff(req.decoded.sub)
+    : typeof OrderDAO.selectAll === 'function'
+      ? await OrderDAO.selectAll()
+      : await Models.Order.find({}).exec();
 
       const revenue = orders.reduce((sum, item) => sum + Number(item.total || 0), 0);
       const totalStock = products.reduce((sum, item) => sum + Number(item.stock || 0), 0);
@@ -1556,7 +1558,10 @@ router.get(
   JwtUtil.requireRoles(['admin', 'staff']),
   async function (req, res) {
     try {
-      const orders = await OrderDAO.selectAll();
+      const orders =
+        req.decoded?.role === 'staff'
+          ? await OrderDAO.selectByAssignedStaff(req.decoded.sub)
+          : await OrderDAO.selectAll();
       res.json({
         success: true,
         orders: orders.map(safeOrderCustomer)
@@ -1771,7 +1776,15 @@ router.get(
   async function (req, res) {
     try {
       const _cid = req.params.cid;
-      const orders = await OrderDAO.selectByCustID(_cid);
+
+      const orders =
+        req.decoded?.role === 'staff'
+          ? await OrderDAO.selectByAssignedStaffAndCustomer(
+            req.decoded.sub,
+            _cid
+          )
+          : await OrderDAO.selectByCustID(_cid);
+
 
       res.json({
         success: true,
