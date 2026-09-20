@@ -770,6 +770,21 @@ function MyOrdersComponent() {
 
         return;
       }
+      if (comment.length > 1000) {
+  setReviewDrafts(
+    previous => ({
+      ...previous,
+      [key]: {
+        ...current,
+        open: true,
+        errorMessage:
+          'Nội dung đánh giá không được vượt quá 1000 ký tự.'
+      }
+    })
+  );
+
+  return;
+}
 
       try {
         setReviewDrafts(
@@ -2028,9 +2043,9 @@ function MyOrdersComponent() {
 
                                               <textarea
                                                 id={`review-${order._id}-${productId}`}
-                                                value={
-                                                  reviewDraft.comment
-                                                }
+                                                value={reviewDraft.comment}
+                                                maxLength={1000}
+                                                disabled={reviewDraft.submitting}
                                                 onChange={
                                                   event =>
                                                     handleReviewFieldChange(
@@ -2043,6 +2058,9 @@ function MyOrdersComponent() {
                                                 placeholder="Hãy chia sẻ cảm nhận của bạn về sản phẩm..."
                                                 rows={4}
                                               />
+                                              <small className="wf-order-review-count">
+                                                {reviewDraft.comment.length}/1000
+                                              </small>
                                             </div>
 
                                             {reviewDraft.errorMessage && (
