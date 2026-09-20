@@ -335,9 +335,10 @@ const ReviewSchema = new Schema({
   },
 
   comment: {
-    type: String,
-    trim: true,
-    default: ''
+  type: String,
+  trim: true,
+  default: '',
+  maxlength: 1000
   },
 
   cdate: {

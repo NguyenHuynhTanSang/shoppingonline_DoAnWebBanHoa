@@ -606,3 +606,151 @@ test('customer orders preserve reviewed item state after reload', async () => {
     await api.close();
   }
 });
+test('review creation validates rating and comment before persistence', async () => {
+  const validBody = {
+    productId,
+    orderId,
+    rating: 5,
+    comment: 'Hoa đẹp, giao đúng mẫu.'
+  };
+
+  async function createApi() {
+    const s = fixture(true, 'completed');
+    s.productDAO.selectByID = async id => {
+  return s.state.products[String(id)] || null;
+};
+
+s.models.Order.findById = id => ({
+  async exec() {
+    return s.state.orders[String(id)] || null;
+  }
+});
+
+    s.models.Review.create = async review => {
+      const row = {
+        ...review,
+        _id: 'a'.repeat(24)
+      };
+
+      s.state.reviews[String(row._id)] =
+        JSON.parse(JSON.stringify(row));
+
+      return row;
+    };
+
+    return {
+      s,
+      api: await http(s)
+    };
+  }
+
+  for (const invalidRating of [
+    undefined,
+    null,
+    '',
+    'abc',
+    0,
+    6,
+    2.5
+  ]) {
+    const { s, api } = await createApi();
+
+    try {
+      const response = await api.request(
+        'customer/reviews',
+        'POST',
+        {
+          ...validBody,
+          rating: invalidRating
+        }
+      );
+
+      assert.equal(
+        response.status,
+        400,
+        `rating=${String(invalidRating)}`
+      );
+
+      assert.equal(
+        Object.keys(s.state.reviews).length,
+        0,
+        `rating=${String(invalidRating)}`
+      );
+    } finally {
+      await api.close();
+    }
+  }
+
+  {
+    const { s, api } = await createApi();
+
+    try {
+      const response = await api.request(
+        'customer/reviews',
+        'POST',
+        {
+          ...validBody,
+          comment: '   '
+        }
+      );
+
+      assert.equal(response.status, 400);
+      assert.equal(
+        Object.keys(s.state.reviews).length,
+        0
+      );
+    } finally {
+      await api.close();
+    }
+  }
+
+  {
+    const { s, api } = await createApi();
+
+    try {
+      const response = await api.request(
+        'customer/reviews',
+        'POST',
+        {
+          ...validBody,
+          comment: 'a'.repeat(1001)
+        }
+      );
+
+      assert.equal(response.status, 400);
+      assert.equal(
+        Object.keys(s.state.reviews).length,
+        0
+      );
+    } finally {
+      await api.close();
+    }
+  }
+
+  {
+    const { s, api } = await createApi();
+
+    try {
+      const response = await api.request(
+        'customer/reviews',
+        'POST',
+        validBody
+      );
+
+      assert.equal(response.status, 200);
+      assert.equal(response.body.success, true);
+      assert.equal(response.body.review.rating, 5);
+      assert.equal(
+        response.body.review.comment,
+        validBody.comment
+      );
+
+      assert.equal(
+        Object.keys(s.state.reviews).length,
+        1
+      );
+    } finally {
+      await api.close();
+    }
+  }
+});

@@ -715,8 +715,12 @@ router.post('/reviews', JwtUtil.checkToken, requireActiveCustomer, async functio
 
     const productId = String(body.productId || body.pid || '').trim();
     const orderId = String(body.orderId || '').trim();
-    const rating = Math.max(1, Math.min(5, Math.floor(Number(body.rating || 5))));
-    const comment = String(body.comment || '').trim();
+    const rawRating = body.rating;
+    const rating = Number(rawRating);
+    const comment =
+      typeof body.comment === 'string'
+        ? body.comment.trim()
+        : '';
 
     if (!customerId) {
       return res.status(401).json({
@@ -731,6 +735,16 @@ router.post('/reviews', JwtUtil.checkToken, requireActiveCustomer, async functio
         message: 'Thiếu mã sản phẩm hoặc mã đơn hàng'
       });
     }
+    if (
+  !Number.isInteger(rating) ||
+  rating < 1 ||
+  rating > 5
+) {
+  return res.status(400).json({
+    success: false,
+    message: 'Số sao đánh giá phải là số nguyên từ 1 đến 5'
+  });
+}
 
     if (!comment) {
       return res.status(400).json({
@@ -738,7 +752,12 @@ router.post('/reviews', JwtUtil.checkToken, requireActiveCustomer, async functio
         message: 'Vui lòng nhập nội dung bình luận'
       });
     }
-
+    if (comment.length > 1000) {
+  return res.status(400).json({
+    success: false,
+    message: 'Nội dung đánh giá không được vượt quá 1000 ký tự'
+  });
+}
     const productDoc = await loadProductById(productId);
 
     if (!productDoc) {
