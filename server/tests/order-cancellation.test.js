@@ -754,3 +754,60 @@ s.models.Order.findById = id => ({
     }
   }
 });
+test('review duplicate key conflict is returned safely', async t => {
+  const s = fixture(true, 'completed');
+
+  s.productDAO.selectByID = async id => {
+    return s.state.products[String(id)] || null;
+  };
+
+  s.models.Order.findById = id => ({
+    async exec() {
+      return s.state.orders[String(id)] || null;
+    }
+  });
+
+  s.models.Review.findOne = () => ({
+    async exec() {
+      return null;
+    }
+  });
+
+  s.models.Review.create = async () => {
+    const error = new Error('synthetic duplicate key');
+    error.code = 11000;
+    throw error;
+  };
+
+  const api = await http(s);
+
+  try {
+    t.mock.method(console, 'error', () => {});
+
+    const response = await api.request(
+      'customer/reviews',
+      'POST',
+      {
+        productId,
+        orderId,
+        rating: 5,
+        comment: 'Hoa đẹp.'
+      }
+    );
+
+    assert.equal(response.status, 409);
+    assert.equal(response.body.success, false);
+
+    assert.equal(
+      response.body.message,
+      'Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi'
+    );
+
+    assert.equal(
+      'stack' in response.body,
+      false
+    );
+  } finally {
+    await api.close();
+  }
+});

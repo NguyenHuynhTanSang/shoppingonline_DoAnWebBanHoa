@@ -808,9 +808,9 @@ router.post('/reviews', JwtUtil.checkToken, requireActiveCustomer, async functio
     }).exec();
 
     if (existedReview) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
-        message: 'Bạn đã bình luận sản phẩm này trong đơn hàng này rồi'
+        message: 'Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi'
       });
     }
 
@@ -843,12 +843,20 @@ router.post('/reviews', JwtUtil.checkToken, requireActiveCustomer, async functio
       review: sanitizeReview(review)
     });
   } catch (err) {
-    console.error('CREATE REVIEW ERROR:', err);
-    return res.status(500).json({
+  if (err?.code === 11000) {
+    return res.status(409).json({
       success: false,
-      message: err.message || 'Server error'
+      message: 'Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi'
     });
   }
+
+  console.error('CREATE REVIEW ERROR:', err);
+
+  return res.status(500).json({
+    success: false,
+    message: 'Không thể tạo đánh giá. Vui lòng thử lại sau.'
+  });
+}
 });
 
 // =========================

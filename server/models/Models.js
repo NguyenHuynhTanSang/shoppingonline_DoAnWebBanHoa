@@ -383,7 +383,22 @@ const ReviewSchema = new Schema({
     }
   }
 }, { versionKey: false });
-
+ReviewSchema.index(
+  {
+    'customer._id': 1,
+    'product._id': 1,
+    'order._id': 1
+  },
+  {
+    name: 'review_customer_product_order_unique',
+    unique: true,
+    partialFilterExpression: {
+      'customer._id': { $type: 'objectId' },
+      'product._id': { $type: 'objectId' },
+      'order._id': { $type: 'objectId' }
+    }
+  }
+);
 // =========================
 // Models
 // =========================
