@@ -248,10 +248,9 @@ function ProductDetailComponent() {
           setLoading(true);
           setReviewsLoading(true);
 
-          const [
+                    const [
             productRes,
-            allProductsRes,
-            reviewsRes
+            allProductsRes
           ] =
             await Promise.all([
               API.get(
@@ -260,12 +259,22 @@ function ProductDetailComponent() {
 
               API.get(
                 '/customer/all-products'
-              ),
-
-              API.get(
-                `/customer/reviews/product/${id}`
               )
             ]);
+
+          let reviewsRes = null;
+
+          try {
+            reviewsRes =
+              await API.get(
+                `/customer/reviews/product/${id}`
+              );
+          } catch (reviewError) {
+            console.error(
+              'REVIEW LOAD ERROR:',
+              reviewError
+            );
+          }
 
           const productData =
             productRes.data &&
@@ -282,15 +291,13 @@ function ProductDetailComponent() {
 
           const reviewData =
             Array.isArray(
-              reviewsRes.data
-                ?.reviews
+              reviewsRes?.data?.reviews
             )
               ? reviewsRes.data.reviews
               : [];
 
           const summaryData =
-            reviewsRes.data
-              ?.summary ||
+            reviewsRes?.data?.summary ||
             {
               reviewCount: 0,
               averageRating: 0
@@ -1146,13 +1153,13 @@ function ProductDetailComponent() {
             </div>
 
             <p className="product-review-guide">
-              Khách hàng đã mua hàng có thể
-              vào phần{' '}
-              <strong>
-                Đơn hàng của tôi
-              </strong>{' '}
-              để gửi đánh giá.
-            </p>
+  Sau khi đơn hàng được giao thành công,
+  bạn có thể vào phần{' '}
+  <strong>
+    Đơn hàng của tôi
+  </strong>{' '}
+  để gửi đánh giá.
+</p>
           </div>
 
           {reviewsLoading ? (

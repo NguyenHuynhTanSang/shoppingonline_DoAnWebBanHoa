@@ -129,6 +129,7 @@ function sanitizeReview(reviewDoc) {
     rating: toNumber(review.rating, 5),
     comment: String(review.comment || ''),
     cdate: toNumber(review.cdate, 0),
+
     product: review.product
       ? {
           _id: review.product._id,
@@ -136,16 +137,11 @@ function sanitizeReview(reviewDoc) {
           image: review.product.image || ''
         }
       : null,
+
     customer: review.customer
       ? {
-          _id: review.customer._id,
           username: review.customer.username || '',
           name: review.customer.name || ''
-        }
-      : null,
-    order: review.order
-      ? {
-          _id: review.order._id
         }
       : null
   };
