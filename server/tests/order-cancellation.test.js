@@ -461,3 +461,148 @@ test('staff order listing is scoped to assigned deliveries', async () => {
     await api.close();
   }
 });
+test('customer review eligibility requires completed order', async () => {
+  const cases = [
+    ['pending', false],
+    ['approved', false],
+    ['preparing', false],
+    ['delivering', false],
+    ['completed', true],
+    ['canceled', false]
+  ];
+
+  for (const [status, expected] of cases) {
+    const s = fixture(true, status);
+
+    s.orderDAO.selectByCustID = async customerId => {
+      return Object.values(s.state.orders).filter(
+        order =>
+          String(order.customer?._id || '') ===
+          String(customerId)
+      );
+    };
+
+    const api = await http(s);
+
+    try {
+      const response = await api.request(
+        'customer/orders',
+        'GET'
+      );
+
+      assert.equal(response.status, 200, status);
+
+      const order = response.body.orders.find(
+        item => item._id === orderId
+      );
+
+      assert.ok(order, status);
+
+      assert.equal(
+        order.canReview,
+        expected,
+        status
+      );
+
+      assert.equal(
+        order.items[0].canReview,
+        expected,
+        status
+      );
+    } finally {
+      await api.close();
+    }
+  }
+});
+test('customer orders preserve reviewed item state after reload', async () => {
+  const s = fixture(true, 'completed');
+
+  const secondProductId = '2'.repeat(24);
+  const otherOrderId = '8'.repeat(24);
+
+  s.state.orders[orderId].items.push({
+    product: {
+      _id: secondProductId
+    },
+    quantity: 1
+  });
+
+  s.state.reviews['a'.repeat(24)] = {
+    _id: 'a'.repeat(24),
+    customer: {
+      _id: owner
+    },
+    product: {
+      _id: productId
+    },
+    order: {
+      _id: orderId
+    },
+    rating: 5,
+    comment: 'Reviewed'
+  };
+
+  // Same customer + another order must not mark this item reviewed.
+  s.state.reviews['b'.repeat(24)] = {
+    _id: 'b'.repeat(24),
+    customer: {
+      _id: owner
+    },
+    product: {
+      _id: secondProductId
+    },
+    order: {
+      _id: otherOrderId
+    },
+    rating: 4,
+    comment: 'Other order'
+  };
+
+  s.orderDAO.selectByCustID = async customerId => {
+    return Object.values(s.state.orders).filter(
+      order =>
+        String(order.customer?._id || '') ===
+        String(customerId)
+    );
+  };
+
+  const api = await http(s);
+
+  try {
+    const response = await api.request(
+      'customer/orders',
+      'GET'
+    );
+
+    assert.equal(response.status, 200);
+
+    const order = response.body.orders.find(
+      item => item._id === orderId
+    );
+
+    assert.ok(order);
+    assert.equal(order.canReview, true);
+
+    const reviewedItem = order.items.find(
+      item =>
+        String(item.product?._id || '') ===
+        productId
+    );
+
+    const notReviewedItem = order.items.find(
+      item =>
+        String(item.product?._id || '') ===
+        secondProductId
+    );
+
+    assert.ok(reviewedItem);
+    assert.equal(reviewedItem.hasReviewed, true);
+    assert.equal(reviewedItem.canReview, false);
+
+    assert.ok(notReviewedItem);
+    assert.equal(notReviewedItem.hasReviewed, false);
+    assert.equal(notReviewedItem.canReview, true);
+  } finally {
+    await api.close();
+  }
+});

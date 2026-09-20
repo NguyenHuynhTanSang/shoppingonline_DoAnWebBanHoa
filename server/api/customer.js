@@ -48,8 +48,18 @@ function normalizeOrderStatus(status = '') {
 }
 
 function canCustomerReviewOrderStatus(status = '') {
-  const safeStatus = normalizeOrderStatus(status);
-  return ['approved', 'preparing', 'delivering', 'completed'].includes(safeStatus);
+  return normalizeOrderStatus(status) === 'completed';
+}
+
+function getReviewItemKey(orderId, productId) {
+  const safeOrderId = String(orderId || '').trim();
+  const safeProductId = String(productId || '').trim();
+
+  if (!safeOrderId || !safeProductId) {
+    return '';
+  }
+
+  return `${safeOrderId}:${safeProductId}`;
 }
 
 function getDecodedUser(req) {
@@ -1403,6 +1413,25 @@ router.get('/orders', JwtUtil.checkToken, requireActiveCustomer, async function 
     }
 
     const orders = await OrderDAO.selectByCustID(customerId);
+    const reviews = await Models.Review.find({
+  'customer._id': customerId
+})
+  .select({
+    'product._id': 1,
+    'order._id': 1
+  })
+  .exec();
+
+const reviewedItemKeys = new Set(
+  (Array.isArray(reviews) ? reviews : [])
+    .map(review =>
+      getReviewItemKey(
+        review?.order?._id,
+        review?.product?._id
+      )
+    )
+    .filter(Boolean)
+);
 
     const normalizedOrders = (Array.isArray(orders) ? orders : []).map((order) => {
       const safeOrder = sanitizeOrderForCustomer(order);
@@ -1411,10 +1440,20 @@ router.get('/orders', JwtUtil.checkToken, requireActiveCustomer, async function 
       return {
         ...safeOrder,
         canReview,
-        items: (Array.isArray(safeOrder.items) ? safeOrder.items : []).map((item) => ({
-          ...item,
-          canReview
-        }))
+        items: (Array.isArray(safeOrder.items) ? safeOrder.items : []).map((item) => {
+  const hasReviewed = reviewedItemKeys.has(
+    getReviewItemKey(
+      safeOrder._id,
+      item?.product?._id
+    )
+  );
+
+  return {
+    ...item,
+    canReview: canReview && !hasReviewed,
+    hasReviewed
+  };
+})
       };
     });
 

@@ -12,7 +12,7 @@ function load(file, dependencies) {
   return module.exports;
 }
 function setup() {
-  const state = { products: {}, orders: {}, vouchers: {} };
+  const state = { products: {}, orders: {}, vouchers: {}, reviews: {} };
   const faults = {};
   const writes = [];
   let version = 0, retries = 0, ended = 0;
@@ -68,6 +68,13 @@ function setup() {
   }
   function model(collection) {
     return {
+      find(filter = {}) {
+  return query(session =>
+    Object.values(
+      (session ? data(session) : state)[collection]
+    ).filter(row => matches(row, filter))
+  );
+},
       findById(id) { return query(session => data(session)[collection][String(id)] || null); },
       findOne(filter) { return query(session => Object.values((session ? data(session) : state)[collection]).find(row => matches(row, filter)) || null); },
       findByIdAndUpdate(id, update, options) { return this.findOneAndUpdate({ _id: id }, update, options); },
@@ -96,7 +103,7 @@ function setup() {
       }
     };
   }
-  const models = { Product: model('products'), Order: model('orders'), Voucher: model('vouchers') };
+  const models = { Product: model('products'), Order: model('orders'), Voucher: model('vouchers'), Review: model('reviews') };
   models.Order.collection = { listIndexes() { return { async toArray() {
     if (faults.indexError) throw new Error('index unavailable');
     return faults.indexes || [{ name: 'checkout_customer_key_unique', key: { 'customer._id': 1, checkoutIdempotencyKey: 1 }, unique: true,
