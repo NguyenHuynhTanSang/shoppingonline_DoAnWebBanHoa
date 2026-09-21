@@ -64,11 +64,9 @@ function CheckoutComponent() {
   }, []);
 
   const clearCustomerSession = useCallback(() => {
-    localStorage.removeItem('customerToken');
-    localStorage.removeItem('customer');
-    localStorage.removeItem('cart');
-    clearVoucherStorage();
-  }, [clearVoucherStorage]);
+  localStorage.removeItem('customerToken');
+  localStorage.removeItem('customer');
+}, []);
 
   const forceLogout = useCallback(
     (message) => {

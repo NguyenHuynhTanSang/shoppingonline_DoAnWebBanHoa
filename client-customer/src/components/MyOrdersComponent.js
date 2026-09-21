@@ -223,31 +223,15 @@ function MyOrdersComponent() {
     useNavigate();
 
   const clearCustomerSession =
-    useCallback(() => {
-      localStorage.removeItem(
-        'customerToken'
-      );
+  useCallback(() => {
+    localStorage.removeItem(
+      'customerToken'
+    );
 
-      localStorage.removeItem(
-        'customer'
-      );
-
-      localStorage.removeItem(
-        'cart'
-      );
-
-      localStorage.removeItem(
-        'cartDiscount'
-      );
-
-      localStorage.removeItem(
-        'cartVoucherCode'
-      );
-
-      localStorage.removeItem(
-        'cartVoucherInfo'
-      );
-    }, []);
+    localStorage.removeItem(
+      'customer'
+    );
+  }, []);
 
   const forceLogout =
     useCallback(
