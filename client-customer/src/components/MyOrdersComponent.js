@@ -195,6 +195,11 @@ function MyOrdersComponent() {
   ] = useState(true);
 
   const [
+    loadError,
+    setLoadError
+  ] = useState('');
+
+  const [
     cancelingId,
     setCancelingId
   ] = useState('');
@@ -343,6 +348,7 @@ function MyOrdersComponent() {
 
         try {
           setLoading(true);
+          setLoadError('');
 
           const res =
             await API.get(
@@ -368,6 +374,11 @@ function MyOrdersComponent() {
             );
 
             setOrders([]);
+
+            setLoadError(
+              res.data?.message ||
+              'Không thể tải đơn hàng. Vui lòng thử lại sau.'
+            );
 
             return;
           }
@@ -451,9 +462,8 @@ function MyOrdersComponent() {
             return;
           }
 
-          alert(
-            error.response
-              ?.data?.message ||
+          setLoadError(
+            error.response?.data?.message ||
             'Không thể tải đơn hàng. Vui lòng thử lại sau.'
           );
 
@@ -1245,20 +1255,44 @@ function MyOrdersComponent() {
               thông tin đơn hàng của bạn.
             </p>
           </section>
-        ) : filteredOrders.length ===
-          0 ? (
+        ) : loadError ? (
+          <section className="wf-orders-empty">
+            <div className="wf-orders-empty-icon">
+              ⚠️
+            </div>
+
+            <h2>
+              Không thể tải đơn hàng
+            </h2>
+
+            <p>
+              {loadError}
+            </p>
+
+            <button
+              type="button"
+              className="wf-orders-empty-button"
+              onClick={fetchOrders}
+            >
+              Thử lại
+            </button>
+          </section>
+        ) : filteredOrders.length === 0 ? (
           <section className="wf-orders-empty">
             <div className="wf-orders-empty-icon">
               🧾
             </div>
 
             <h2>
-              Không tìm thấy đơn hàng
+              {orders.length === 0
+                ? 'Bạn chưa có đơn hàng'
+                : 'Không tìm thấy đơn hàng'}
             </h2>
 
             <p>
-              Không có đơn hàng phù hợp
-              với bộ lọc hiện tại.
+              {orders.length === 0
+                ? 'Bạn chưa đặt đơn hàng nào tại Wind Flower.'
+                : 'Không có đơn hàng phù hợp với bộ lọc hiện tại.'}
             </p>
 
             <Link
