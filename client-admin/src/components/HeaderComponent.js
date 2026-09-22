@@ -12,7 +12,7 @@ function HeaderComponent() {
     localStorage.removeItem('adminUser');
     localStorage.removeItem('adminRole');
 
-    navigate('/admin/login', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   return (

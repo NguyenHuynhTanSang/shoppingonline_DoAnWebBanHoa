@@ -65,19 +65,19 @@ function DashboardComponent() {
             <div className="dashboard-stat-card primary">
               <p>Sản phẩm</p>
               <h3>{stats.productCount}</h3>
-              <Link to="/admin/products">Đi đến quản lý sản phẩm</Link>
+              <Link to="/products">Đi đến quản lý sản phẩm</Link>
             </div>
 
             <div className="dashboard-stat-card primary">
               <p>Khách hàng</p>
               <h3>{stats.customerCount}</h3>
-              <Link to="/admin/customers">Đi đến quản lý khách hàng</Link>
+              <Link to="/customers">Đi đến quản lý khách hàng</Link>
             </div>
 
             <div className="dashboard-stat-card primary">
               <p>Đơn hàng</p>
               <h3>{stats.orderCount}</h3>
-              <Link to="/admin/orders">Đi đến quản lý đơn hàng</Link>
+              <Link to="/orders">Đi đến quản lý đơn hàng</Link>
             </div>
 
             <div className="dashboard-stat-card revenue">
@@ -113,10 +113,10 @@ function DashboardComponent() {
             <div className="dashboard-panel">
               <h4>Truy cập nhanh</h4>
               <div className="dashboard-quick-links">
-                <Link to="/admin/products">Quản lý sản phẩm</Link>
-                <Link to="/admin/categories">Quản lý danh mục</Link>
-                <Link to="/admin/customers">Quản lý khách hàng</Link>
-                <Link to="/admin/orders">Quản lý đơn hàng</Link>
+                <Link to="/products">Quản lý sản phẩm</Link>
+                <Link to="/categories">Quản lý danh mục</Link>
+                <Link to="/customers">Quản lý khách hàng</Link>
+                <Link to="/orders">Quản lý đơn hàng</Link>
               </div>
             </div>
 

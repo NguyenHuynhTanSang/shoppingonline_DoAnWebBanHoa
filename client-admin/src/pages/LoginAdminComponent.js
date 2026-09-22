@@ -37,7 +37,7 @@ function LoginAdminComponent() {
         localStorage.setItem('adminRole', user.role || 'admin');
         localStorage.setItem('admin', JSON.stringify(user));
 
-        navigate('/admin/dashboard');
+        navigate('/dashboard');
       } else {
         setMessage(res.data?.message || 'Đăng nhập thất bại');
       }
