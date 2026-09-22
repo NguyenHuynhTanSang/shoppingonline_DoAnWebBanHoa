@@ -1,6 +1,7 @@
 import React, {
   useEffect,
   useMemo,
+  useRef,
   useState
 } from 'react';
 
@@ -33,6 +34,10 @@ function CartComponent() {
     cart,
     setCart
   ] = useState([]);
+
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
+  const stockChecks = useRef(new Set());
 
   const [
     voucherCode,
@@ -182,6 +187,7 @@ function CartComponent() {
 
   const saveCart =
     newCart => {
+      cartRef.current = newCart;
       setCart(
         newCart
       );
@@ -225,12 +231,38 @@ function CartComponent() {
       }
     };
 
-  const updateQuantity = (
+  const updateQuantity = async (
     productId,
     value
   ) => {
+    let availableStock;
+    if (value > 0) {
+      if (stockChecks.current.has(productId)) return;
+      stockChecks.current.add(productId);
+      try {
+        const response = await API.get(
+          `/customer/products/${encodeURIComponent(productId)}`,
+          { timeout: 10000 }
+        );
+        const product = response.data;
+        if (
+          String(product?._id) !== String(productId) ||
+          typeof product?.stock !== 'number' ||
+          !Number.isFinite(product.stock) || product.stock < 0
+        ) {
+          throw new Error('Invalid stock response');
+        }
+        availableStock = product.stock;
+      } catch (error) {
+        alert('Chưa thể kiểm tra tồn kho. Vui lòng thử lại sau.');
+        return;
+      } finally {
+        stockChecks.current.delete(productId);
+      }
+    }
+
     const newCart =
-      cart.map(item => ({
+      cartRef.current.map(item => ({
         ...item
       }));
 
@@ -254,6 +286,15 @@ function CartComponent() {
     const nextQuantity =
       currentQuantity +
       value;
+
+    if (value > 0 && nextQuantity > availableStock) {
+      alert(
+        availableStock === 0
+          ? 'Sản phẩm hiện đã hết hàng.'
+          : `Sản phẩm chỉ còn ${availableStock} sản phẩm trong kho.`
+      );
+      return;
+    }
 
     if (
       nextQuantity <= 0
