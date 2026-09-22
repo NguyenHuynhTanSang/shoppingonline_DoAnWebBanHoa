@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import API, { API_BASE } from '../services/api';
 const laterStatus = (previous, next) => ({ pending: 0, in_progress: 1, resolved: 2 }[previous] > { pending: 0, in_progress: 1, resolved: 2 }[next] ? previous : next);
@@ -12,6 +12,23 @@ export default function HumanSupportChat({ requestId, onResolved, tokenKey = 'cu
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const olderRequest = useRef(null);
+  const scrollRef = useRef(null);
+  const scrollHistory = useRef(null);
+  useLayoutEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const first = messages[0]?._id;
+    const last = messages[messages.length - 1]?._id;
+    const previous = scrollHistory.current;
+    if (last && (!previous || previous.requestId !== requestId || previous.last !== last)) {
+      node.scrollTop = node.scrollHeight;
+    } else if (first && previous && previous.first !== first) {
+      node.scrollTop += node.scrollHeight - previous.height;
+    }
+    scrollHistory.current = { requestId, first, last, height: node.scrollHeight };
+  }, [messages, requestId]);
   const socketRef = useRef(null);
   const retry = useRef(null);
   const busy = useRef(false);
@@ -31,6 +48,7 @@ export default function HumanSupportChat({ requestId, onResolved, tokenKey = 'cu
   const merge = rows => setMessages(previous => [...new Map([...previous, ...rows].map(row => [String(row._id), row])).values()].sort((a, b) => a.sequence - b.sequence));
   useEffect(() => {
     let alive = true;
+    olderRequest.current = null; setLoadingOlder(false);
     statusOwner.current = requestId;
     setMessages([]); setStatus('pending'); setReady(false); setError(''); setDraft(''); retry.current = null;
     const socket = io(API_BASE || window.location.origin, {
@@ -74,13 +92,20 @@ export default function HumanSupportChat({ requestId, onResolved, tokenKey = 'cu
     socket.on('disconnect', () => { setReady(false); setConnection('Mất kết nối. Đang kết nối lại…'); });
     socket.on('connect_error', () => { setReady(false); setConnection('Chưa kết nối. Kiểm tra đăng nhập hoặc thử kết nối lại.'); });
     socket.on('support:error', () => { setReady(false); setError('Bạn không còn quyền truy cập phiên này.'); });
-    return () => { alive = false; clearInterval(timer); window.removeEventListener('focus', refreshStatus); socket.disconnect(); socketRef.current = null; };
+    return () => { alive = false; olderRequest.current = null; clearInterval(timer); window.removeEventListener('focus', refreshStatus); socket.disconnect(); socketRef.current = null; };
   }, [requestId, tokenKey]);
   async function older() {
+    if (olderRequest.current || !hasMore) return;
+    const request = {};
+    olderRequest.current = request; setLoadingOlder(true);
     try {
       const response = await API.get(`/support-chat/${requestId}/messages`, { params: { before: messages[0]?.sequence } });
+      if (olderRequest.current !== request) return;
       merge(response.data.messages); setHasMore(response.data.hasMore);
-    } catch { setError('Không tải được tin nhắn cũ.'); }
+    } catch { if (olderRequest.current === request) setError('Không tải được tin nhắn cũ.'); }
+    finally {
+      if (olderRequest.current === request) { olderRequest.current = null; setLoadingOlder(false); }
+    }
   }
   function send(event) {
     event.preventDefault();
@@ -103,20 +128,21 @@ export default function HumanSupportChat({ requestId, onResolved, tokenKey = 'cu
       merge([result.message]); retry.current = null; setDraft('');
     });
   }
-  return <section aria-label="Trò chuyện với nhân viên" style={{ padding: 12, overflowY: 'auto', minHeight: 0 }}>
-    <h3>{status === 'resolved' ? 'Phiên hỗ trợ đã kết thúc.' : status === 'pending' ? 'Đang chờ nhân viên Wind Flower tiếp nhận.' : 'Nhân viên Wind Flower đang hỗ trợ'}</h3>
+  return <section ref={scrollRef} aria-label="Trò chuyện với nhân viên" style={{ padding: 12, overflowY: 'auto', minHeight: 0 }}>
+    <h3>{status === 'resolved' ? 'Phiên hỗ trợ đã kết thúc.' : status === 'pending' ? 'Yêu cầu hỗ trợ đã được gửi. Vui lòng chờ nhân viên tiếp nhận cuộc trò chuyện.' : 'Nhân viên Wind Flower đang hỗ trợ'}</h3>
     <p role="status">{status === 'resolved' ? 'Lịch sử hỗ trợ chỉ đọc.' : connection}</p>{error && <p role="alert">{error}</p>}
     {!ready && status !== 'resolved' && <button onClick={() => { socketRef.current?.disconnect(); socketRef.current?.connect(); }}>Kết nối lại</button>}
-    {hasMore && <button onClick={older}>Tin nhắn cũ hơn</button>}
-    <div role="log" aria-live="polite">{messages.map(item => <div key={item._id} style={{ margin: '10px 0', padding: 8, background: '#f5f5f5', overflowWrap: 'anywhere' }}>
+    {hasMore && <button type="button" disabled={loadingOlder} onClick={older}>{loadingOlder ? 'Đang tải...' : 'Tin nhắn cũ hơn'}</button>}
+    <div role="log" aria-live="polite">{messages.map(item => <div key={item._id} style={{ margin: '10px 0', marginLeft: item.senderType === 'customer' ? 'auto' : 0, marginRight: item.senderType === 'customer' ? 0 : 'auto', maxWidth: '85%', borderRadius: 10, padding: 8, background: item.senderType === 'customer' ? '#ffe0ed' : '#f5f5f5', overflowWrap: 'anywhere' }}>
       <strong>{item.senderType === 'customer' ? 'Khách hàng' : 'Nhân viên Wind Flower'}</strong>
       <p style={{ whiteSpace: 'pre-wrap' }}>{item.message}</p><small>{new Date(item.createdAt).toLocaleString('vi-VN')}</small>
     </div>)}</div>
     <form onSubmit={send} style={{ display: 'flex', gap: 8 }}>
-      <input aria-label="Tin nhắn hỗ trợ" maxLength={2000} value={draft} onChange={event => setDraft(event.target.value)}
+      <input aria-label="Tin nhắn hỗ trợ" placeholder="Nhập tin nhắn cho nhân viên hỗ trợ..." maxLength={2000} value={draft} onChange={event => setDraft(event.target.value)}
         disabled={!ready || sending || status !== 'in_progress'} style={{ minWidth: 0, flex: 1, padding: 10 }}
         onKeyDown={event => { if (event.key === 'Enter' && event.nativeEvent.isComposing) event.preventDefault(); }} />
       <button disabled={!ready || sending || !draft.trim() || status !== 'in_progress'}>Gửi</button>
     </form>
+    <small>{draft.length}/2000</small>
   </section>;
 }
