@@ -401,8 +401,10 @@ function CheckoutComponent() {
 
             <form onSubmit={handlePlaceOrder} className="checkout-form">
               <div className="checkout-form-group">
-                <label>Họ và tên</label>
+                <label htmlFor="checkout-full-name">Họ và tên</label>
                 <input
+                  id="checkout-full-name"
+                  autoComplete="name"
                   type="text"
                   name="fullName"
                   placeholder="Nhập họ và tên"
@@ -412,8 +414,11 @@ function CheckoutComponent() {
               </div>
 
               <div className="checkout-form-group">
-                <label>Số điện thoại</label>
+                <label htmlFor="checkout-phone">Số điện thoại</label>
                 <input
+                  id="checkout-phone"
+                  inputMode="tel"
+                  autoComplete="tel"
                   type="text"
                   name="phone"
                   placeholder="Nhập số điện thoại"
@@ -423,8 +428,10 @@ function CheckoutComponent() {
               </div>
 
               <div className="checkout-form-group">
-                <label>Địa chỉ nhận hàng</label>
+                <label htmlFor="checkout-address">Địa chỉ nhận hàng</label>
                 <textarea
+                  id="checkout-address"
+                  autoComplete="shipping street-address"
                   name="address"
                   rows="4"
                   placeholder="Nhập địa chỉ nhận hàng"
@@ -646,7 +653,7 @@ function CheckoutComponent() {
               )}
 
               {voucherMessage && (
-                <p style={{ color: discount > 0 ? 'green' : '#d81b60' }}>{voucherMessage}</p>
+                <p role="status" style={{ color: discount > 0 ? 'green' : '#d81b60' }}>{voucherMessage}</p>
               )}
 
               {totalSavedOnProducts > 0 && (

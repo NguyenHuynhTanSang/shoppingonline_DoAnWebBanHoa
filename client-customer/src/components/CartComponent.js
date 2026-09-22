@@ -1080,7 +1080,7 @@ function CartComponent() {
                                   )
                                 }
                               >
-                                Sao chép
+                                Dùng mã
                               </button>
                             </div>
                           )
