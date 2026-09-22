@@ -96,10 +96,10 @@ function ResetPasswordComponent() {
       }
 
       if (
-        password.length < 6
+        password.length < 6 || new Blob([password]).size > 72
       ) {
         setMessage(
-          'Mật khẩu mới phải có ít nhất 6 ký tự.'
+          'Mật khẩu mới phải có ít nhất 6 ký tự và không quá 72 byte UTF-8.'
         );
 
         return;
@@ -319,7 +319,7 @@ function ResetPasswordComponent() {
 
               <p className="wf-auth-password-hint">
                 Mật khẩu mới phải có ít nhất
-                6 ký tự.
+                6 ký tự và không quá 72 byte UTF-8.
               </p>
 
               {message && (

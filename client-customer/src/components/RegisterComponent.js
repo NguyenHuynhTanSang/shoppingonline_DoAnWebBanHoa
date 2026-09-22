@@ -97,6 +97,11 @@ function RegisterComponent() {
         return;
       }
 
+      if (password.length < 6 || new Blob([password]).size > 72) {
+        setMessage('Mật khẩu phải có ít nhất 6 ký tự và không quá 72 byte UTF-8.');
+        return;
+      }
+
       if (
         password !==
         confirmPassword

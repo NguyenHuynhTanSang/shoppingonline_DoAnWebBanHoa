@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 import API from '../services/api';
@@ -17,6 +17,8 @@ function LoginComponent() {
   const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const destination = location.state?.from === '/checkout' ? '/checkout' : '/';
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -58,11 +60,7 @@ function LoginComponent() {
           )
         );
 
-        alert('Đăng nhập thành công');
-
-        navigate('/');
-
-        window.location.reload();
+        navigate(destination);
 
         return;
       }
@@ -222,17 +220,6 @@ function LoginComponent() {
           </form>
 
           <div className="wf-auth-options">
-            <label className="wf-auth-remember">
-              <input
-                type="checkbox"
-                disabled={submitting}
-              />
-
-              <span>
-                Nhớ tôi
-              </span>
-            </label>
-
             <Link
               to="/forgot-password"
               className="wf-auth-link"

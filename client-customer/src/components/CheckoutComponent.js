@@ -72,7 +72,7 @@ function CheckoutComponent() {
     (message) => {
       clearCustomerSession();
       alert(message);
-      navigate('/login', { replace: true });
+      navigate('/login', { replace: true, state: { from: '/checkout' } });
     },
     [clearCustomerSession, navigate]
   );
@@ -126,7 +126,7 @@ function CheckoutComponent() {
 
     if (!customer || !token) {
       alert('Vui lòng đăng nhập để thanh toán.');
-      navigate('/login');
+      navigate('/login', { state: { from: '/checkout' } });
       return;
     }
 
@@ -270,7 +270,7 @@ function CheckoutComponent() {
     if (!customer || !token) {
       alert('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
       clearCustomerSession();
-      navigate('/login');
+      navigate('/login', { state: { from: '/checkout' } });
       return;
     }
 
