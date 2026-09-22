@@ -22,6 +22,7 @@ import PaymentPolicyComponent from './components/PaymentPolicyComponent';
 import ContactComponent from './components/ContactComponent';
 import ShippingPolicyComponent from './components/ShippingPolicyComponent';
 import ReturnPolicyComponent from './components/ReturnPolicyComponent';
+import NotFoundComponent from './components/NotFoundComponent';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
         <Route path="/lien-he" element={<ContactComponent />} />
         <Route path="/chinh-sach-giao-hang" element={<ShippingPolicyComponent />} />
         <Route path="/doi-tra-hoan-tien" element={<ReturnPolicyComponent />} />
+        <Route path="*" element={<NotFoundComponent />} />
       </Routes>
 
       <AIChatComponent />
