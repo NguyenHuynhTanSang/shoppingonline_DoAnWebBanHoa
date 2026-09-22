@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { clearAdminSession } from './adminSession';
+
+let isHandlingUnauthorized = false;
 
 export const API_BASE = (
   process.env.REACT_APP_API_URL || ''
@@ -39,8 +42,12 @@ API.interceptors.response.use(
       message === 'Token has expired' ||
       message === 'Auth token is not supplied'
     ) {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('token');
+      if (error.response?.status === 401) {
+        if (isHandlingUnauthorized) return Promise.reject(error);
+        isHandlingUnauthorized = true;
+      }
+
+      clearAdminSession();
 
       alert(
         'Phiên đăng nhập admin đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.'

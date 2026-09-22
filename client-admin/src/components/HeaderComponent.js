@@ -1,16 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { clearAdminSession } from '../services/adminSession';
 
 function HeaderComponent() {
   const navigate = useNavigate();
-  const admin = JSON.parse(localStorage.getItem('admin')) || {};
+  let admin = {};
+  try {
+    admin = JSON.parse(localStorage.getItem('admin')) || {};
+  } catch (error) {
+    admin = {};
+  }
 
   const handleLogout = () => {
-    localStorage.removeItem('admin');
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('token');
-    localStorage.removeItem('adminUser');
-    localStorage.removeItem('adminRole');
+    clearAdminSession();
 
     navigate('/login', { replace: true });
   };
