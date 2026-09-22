@@ -317,6 +317,9 @@ function HomeComponent() {
     setLoadingDb
   ] = useState(true);
 
+  const [loadError, setLoadError] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+
   const [
     activeSlide,
     setActiveSlide
@@ -331,35 +334,36 @@ function HomeComponent() {
     useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchDbProducts =
       async () => {
         try {
           setLoadingDb(true);
+          setLoadError(false);
 
           const res =
             await API.get(
               '/customer/all-products'
             );
 
-          setDbProducts(
-            Array.isArray(res.data)
-              ? res.data
-              : []
-          );
+          if (cancelled) return;
+          if (!Array.isArray(res.data)) {
+            throw new Error('Invalid product response');
+          }
+          setDbProducts(res.data);
         } catch (error) {
-          console.error(
-            'Lỗi load sản phẩm từ DB:',
-            error
-          );
-
+          if (cancelled) return;
+          console.error('Product list could not be loaded');
+          setLoadError(true);
           setDbProducts([]);
         } finally {
-          setLoadingDb(false);
+          if (!cancelled) setLoadingDb(false);
         }
       };
 
     fetchDbProducts();
-  }, []);
+    return () => { cancelled = true; };
+  }, [retryAttempt]);
 
   const bouquetProducts =
     useMemo(() => {
@@ -1010,11 +1014,24 @@ function HomeComponent() {
           </Link>
         </div>
 
-        {items.length === 0 ? (
+        {loadingDb ? (
           <p className="no-products-text">
-            {loadingDb
-              ? 'Đang tải sản phẩm...'
-              : 'Chưa có sản phẩm trong danh mục này.'}
+            Đang tải sản phẩm...
+          </p>
+        ) : loadError ? (
+          <div className="no-products-text" role="alert">
+            <p>Không thể tải sản phẩm. Vui lòng thử lại sau.</p>
+            <button
+              type="button"
+              className="section-more-btn"
+              onClick={() => setRetryAttempt(value => value + 1)}
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : items.length === 0 ? (
+          <p className="no-products-text">
+            Chưa có sản phẩm trong danh mục này.
           </p>
         ) : (
           <div className="home-product-grid">

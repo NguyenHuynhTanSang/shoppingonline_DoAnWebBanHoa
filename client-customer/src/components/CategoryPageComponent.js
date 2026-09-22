@@ -424,36 +424,40 @@ function CategoryPageComponent() {
     setLoadingDb
   ] = useState(true);
 
+  const [loadError, setLoadError] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+
   useEffect(() => {
+    let cancelled = false;
     const fetchDbProducts =
       async () => {
         try {
           setLoadingDb(true);
+          setLoadError(false);
 
           const res =
             await API.get(
               '/customer/all-products'
             );
 
-          setDbProducts(
-            Array.isArray(res.data)
-              ? res.data
-              : []
-          );
+          if (cancelled) return;
+          if (!Array.isArray(res.data)) {
+            throw new Error('Invalid product response');
+          }
+          setDbProducts(res.data);
         } catch (error) {
-          console.error(
-            'Lỗi load sản phẩm từ DB:',
-            error
-          );
-
+          if (cancelled) return;
+          console.error('Product list could not be loaded');
+          setLoadError(true);
           setDbProducts([]);
         } finally {
-          setLoadingDb(false);
+          if (!cancelled) setLoadingDb(false);
         }
       };
 
     fetchDbProducts();
-  }, []);
+    return () => { cancelled = true; };
+  }, [slug, retryAttempt]);
 
   const title =
     useMemo(() => {
@@ -801,6 +805,18 @@ function CategoryPageComponent() {
           <p className="no-products-text category-status-text">
             Đang tải sản phẩm...
           </p>
+        ) : loadError ? (
+          <div className="no-products-text category-status-text" role="alert">
+            <h2>Không thể tải sản phẩm</h2>
+            <p>Vui lòng thử lại sau.</p>
+            <button
+              type="button"
+              className="wf-orders-empty-button"
+              onClick={() => setRetryAttempt(value => value + 1)}
+            >
+              Thử lại
+            </button>
+          </div>
         ) : filteredProducts.length === 0 ? (
           <p className="no-products-text category-status-text">
             Không có sản phẩm phù hợp với danh mục hoặc mức giá này.
