@@ -228,6 +228,15 @@ function ProductDetailComponent() {
     loading,
     setLoading
   ] = useState(true);
+  const [
+  loadError,
+  setLoadError
+  ] = useState('');
+
+  const [
+  reloadKey,
+  setReloadKey
+  ] = useState(0);
 
   const [
     reviewsLoading,
@@ -242,116 +251,128 @@ function ProductDetailComponent() {
   }, [id]);
 
   useEffect(() => {
-    const fetchData =
-      async () => {
-        try {
-          setLoading(true);
-          setReviewsLoading(true);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setReviewsLoading(true);
+      setLoadError('');
 
-                    const [
-            productRes,
-            allProductsRes
-          ] =
-            await Promise.all([
-              API.get(
-                `/customer/products/${id}`
-              ),
+      // Product là dữ liệu chính.
+      const productRes = await API.get(
+        `/customer/products/${id}`
+      );
 
-              API.get(
-                '/customer/all-products'
-              )
-            ]);
+      const productData =
+        productRes.data &&
+        productRes.data._id
+          ? productRes.data
+          : null;
 
-          let reviewsRes = null;
+      if (!productData) {
+        setProduct(null);
+        setAllProducts([]);
+        setReviews([]);
+        setReviewSummary({
+          reviewCount: 0,
+          averageRating: 0
+        });
 
-          try {
-            reviewsRes =
-              await API.get(
-                `/customer/reviews/product/${id}`
-              );
-          } catch (reviewError) {
-            console.error(
-              'REVIEW LOAD ERROR:',
-              reviewError
-            );
-          }
+        return;
+      }
 
-          const productData =
-            productRes.data &&
-            productRes.data._id
-              ? productRes.data
-              : null;
+      setProduct(productData);
 
-          const productsData =
-            Array.isArray(
-              allProductsRes.data
-            )
-              ? allProductsRes.data
-              : [];
+      // Sản phẩm liên quan là dữ liệu phụ:
+      // lỗi phần này không được làm chết Product Detail.
+      try {
+        const allProductsRes = await API.get(
+          '/customer/all-products'
+        );
 
-          const reviewData =
-            Array.isArray(
-              reviewsRes?.data?.reviews
-            )
-              ? reviewsRes.data.reviews
-              : [];
+        setAllProducts(
+          Array.isArray(allProductsRes.data)
+            ? allProductsRes.data
+            : []
+        );
+      } catch (relatedError) {
+        console.error(
+          'RELATED PRODUCTS LOAD ERROR:',
+          relatedError
+        );
 
-          const summaryData =
-            reviewsRes?.data?.summary ||
-            {
-              reviewCount: 0,
-              averageRating: 0
-            };
+        setAllProducts([]);
+      }
 
-          setProduct(
-            productData
-          );
+      // Review cũng là dữ liệu phụ.
+      try {
+        const reviewsRes = await API.get(
+          `/customer/reviews/product/${id}`
+        );
 
-          setAllProducts(
-            productsData
-          );
+        const reviewData =
+          Array.isArray(
+            reviewsRes?.data?.reviews
+          )
+            ? reviewsRes.data.reviews
+            : [];
 
-          setReviews(
-            reviewData
-          );
-
-          setReviewSummary({
-            reviewCount:
-              Number(
-                summaryData.reviewCount ||
-                0
-              ),
-
-            averageRating:
-              Number(
-                summaryData.averageRating ||
-                0
-              )
-          });
-        } catch (error) {
-          console.error(
-            'Lỗi load chi tiết sản phẩm:',
-            error
-          );
-
-          setProduct(null);
-          setAllProducts([]);
-          setReviews([]);
-
-          setReviewSummary({
+        const summaryData =
+          reviewsRes?.data?.summary || {
             reviewCount: 0,
             averageRating: 0
-          });
-        } finally {
-          setLoading(false);
-          setReviewsLoading(
-            false
-          );
-        }
-      };
+          };
 
-    fetchData();
-  }, [id]);
+        setReviews(reviewData);
+
+        setReviewSummary({
+          reviewCount: Number(
+            summaryData.reviewCount || 0
+          ),
+          averageRating: Number(
+            summaryData.averageRating || 0
+          )
+        });
+      } catch (reviewError) {
+        console.error(
+          'REVIEW LOAD ERROR:',
+          reviewError
+        );
+
+        setReviews([]);
+
+        setReviewSummary({
+          reviewCount: 0,
+          averageRating: 0
+        });
+      }
+    } catch (error) {
+      console.error(
+        'Lỗi load chi tiết sản phẩm:',
+        error
+      );
+
+      setProduct(null);
+      setAllProducts([]);
+      setReviews([]);
+
+      setReviewSummary({
+        reviewCount: 0,
+        averageRating: 0
+      });
+
+      if (error.response?.status !== 404) {
+        setLoadError(
+          'Không thể tải sản phẩm. Vui lòng thử lại.'
+        );
+      }
+    } finally {
+      setLoading(false);
+      setReviewsLoading(false);
+    }
+  };
+
+  fetchData();
+}, [id, reloadKey]);
 
   const discountInfo =
     useMemo(
@@ -686,6 +707,35 @@ function ProductDetailComponent() {
             <h2>
               Đang tải sản phẩm...
             </h2>
+          </div>
+        </main>
+
+        <InformComponent />
+      </div>
+    );
+  }
+  if (loadError) {
+    return (
+      <div>
+        <MenuComponent />
+
+        <main className="container product-detail-page">
+          <div className="product-detail-state">
+            <h2>Không thể tải sản phẩm</h2>
+
+            <p>{loadError}</p>
+
+            <button
+              type="button"
+              className="product-detail-state-link"
+              onClick={() =>
+                setReloadKey(
+                  previous => previous + 1
+                )
+              }
+            >
+              Thử lại
+            </button>
           </div>
         </main>
 
