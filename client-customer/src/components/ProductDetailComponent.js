@@ -251,6 +251,8 @@ function ProductDetailComponent() {
     setReviewsLoading
   ] = useState(true);
 
+  const [reviewLoadError, setReviewLoadError] = useState('');
+
   useEffect(() => {
     window.scrollTo(
       0,
@@ -259,16 +261,22 @@ function ProductDetailComponent() {
   }, [id]);
 
   useEffect(() => {
+  let isActive = true;
   const fetchData = async () => {
     try {
       setLoading(true);
       setReviewsLoading(true);
       setLoadError('');
+      setReviewLoadError('');
+      setAllProducts([]);
+      setReviews([]);
+      setReviewSummary({ reviewCount: 0, averageRating: 0 });
 
       // Product là dữ liệu chính.
       const productRes = await API.get(
         `/customer/products/${id}`
       );
+      if (!isActive) return;
 
       const productData =
         productRes.data &&
@@ -277,6 +285,7 @@ function ProductDetailComponent() {
           : null;
 
       if (!productData) {
+        setReviewsLoading(false);
         setProduct(null);
         setAllProducts([]);
         setReviews([]);
@@ -289,13 +298,16 @@ function ProductDetailComponent() {
       }
 
       setProduct(productData);
+      setLoading(false);
 
       // Sản phẩm liên quan là dữ liệu phụ:
       // lỗi phần này không được làm chết Product Detail.
+      const fetchRelated = async () => {
       try {
         const allProductsRes = await API.get(
           '/customer/all-products'
         );
+        if (!isActive) return;
 
         setAllProducts(
           Array.isArray(allProductsRes.data)
@@ -303,6 +315,7 @@ function ProductDetailComponent() {
             : []
         );
       } catch (relatedError) {
+        if (!isActive) return;
         console.error(
           'RELATED PRODUCTS LOAD ERROR:',
           relatedError
@@ -310,12 +323,18 @@ function ProductDetailComponent() {
 
         setAllProducts([]);
       }
+      };
 
       // Review cũng là dữ liệu phụ.
+      const fetchReviews = async () => {
       try {
         const reviewsRes = await API.get(
           `/customer/reviews/product/${id}`
         );
+        if (!isActive) return;
+        if (reviewsRes.data?.success === false) {
+          throw new Error('Review request failed');
+        }
 
         const reviewData =
           Array.isArray(
@@ -341,19 +360,27 @@ function ProductDetailComponent() {
           )
         });
       } catch (reviewError) {
+        if (!isActive) return;
         console.error(
           'REVIEW LOAD ERROR:',
           reviewError
         );
 
         setReviews([]);
+        setReviewLoadError('Không thể tải đánh giá. Vui lòng thử lại sau.');
 
         setReviewSummary({
           reviewCount: 0,
           averageRating: 0
         });
+      } finally {
+        if (isActive) setReviewsLoading(false);
       }
+      };
+      fetchRelated();
+      fetchReviews();
     } catch (error) {
+      if (!isActive) return;
       console.error(
         'Lỗi load chi tiết sản phẩm:',
         error
@@ -362,6 +389,7 @@ function ProductDetailComponent() {
       setProduct(null);
       setAllProducts([]);
       setReviews([]);
+      setReviewsLoading(false);
 
       setReviewSummary({
         reviewCount: 0,
@@ -374,12 +402,12 @@ function ProductDetailComponent() {
         );
       }
     } finally {
-      setLoading(false);
-      setReviewsLoading(false);
+      if (isActive) setLoading(false);
     }
   };
 
   fetchData();
+  return () => { isActive = false; };
 }, [id, reloadKey]);
 
   const discountInfo =
@@ -1232,6 +1260,10 @@ function ProductDetailComponent() {
           {reviewsLoading ? (
             <p className="product-review-status">
               Đang tải đánh giá...
+            </p>
+          ) : reviewLoadError ? (
+            <p className="product-review-status" role="alert">
+              {reviewLoadError}
             </p>
           ) : reviews.length === 0 ? (
             <div className="product-review-empty">
