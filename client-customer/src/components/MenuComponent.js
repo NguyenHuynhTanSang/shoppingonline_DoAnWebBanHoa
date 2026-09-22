@@ -520,6 +520,7 @@ function MenuComponent() {
       'storage',
       refreshCart
     );
+    window.addEventListener('cartUpdated', refreshCart);
 
     window.addEventListener(
       'focus',
@@ -538,6 +539,7 @@ function MenuComponent() {
         'storage',
         refreshCart
       );
+      window.removeEventListener('cartUpdated', refreshCart);
 
       window.removeEventListener(
         'focus',

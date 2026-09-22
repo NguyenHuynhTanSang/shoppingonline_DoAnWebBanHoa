@@ -304,6 +304,14 @@ function buildStockInfo(product) {
 }
 
 function HomeComponent() {
+  const [cartFeedback, setCartFeedback] = useState(0);
+
+  useEffect(() => {
+    if (!cartFeedback) return;
+    const timeout = setTimeout(() => setCartFeedback(0), 3000);
+    return () => clearTimeout(timeout);
+  }, [cartFeedback]);
+
   const navigate =
     useNavigate();
 
@@ -933,11 +941,8 @@ function HomeComponent() {
         )
       );
 
-      alert(
-        'Đã thêm vào giỏ hàng!'
-      );
-
-      window.location.reload();
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      setCartFeedback(value => value + 1);
     };
 
   const reviews = [
@@ -1162,6 +1167,18 @@ function HomeComponent() {
 
   return (
     <div className="home-page wind-home-page">
+      {cartFeedback > 0 && (
+        <div
+          role="status"
+          style={{ position: 'fixed', top: 100, right: 20, zIndex: 1000,
+            maxWidth: 'calc(100vw - 40px)', padding: '12px 18px',
+            background: '#fff0f5', color: '#8f0038', borderRadius: 8,
+            boxShadow: '0 2px 12px #0002' }}
+        >
+          Đã thêm sản phẩm vào giỏ hàng.
+        </div>
+      )}
+
       <div className="container">
         <section
           className="home-banner-section wind-home-hero-section"

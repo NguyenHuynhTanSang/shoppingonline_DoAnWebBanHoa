@@ -403,6 +403,14 @@ function getPricingInfo(product) {
 }
 
 function CategoryPageComponent() {
+  const [cartFeedback, setCartFeedback] = useState(0);
+
+  useEffect(() => {
+    if (!cartFeedback) return;
+    const timeout = setTimeout(() => setCartFeedback(0), 3000);
+    return () => clearTimeout(timeout);
+  }, [cartFeedback]);
+
   const { slug } =
     useParams();
 
@@ -765,15 +773,24 @@ function CategoryPageComponent() {
         )
       );
 
-      alert(
-        'Đã thêm vào giỏ hàng!'
-      );
-
-      window.location.reload();
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      setCartFeedback(value => value + 1);
     };
 
   return (
     <div className="category-page-shell">
+      {cartFeedback > 0 && (
+        <div
+          role="status"
+          style={{ position: 'fixed', top: 100, right: 20, zIndex: 1000,
+            maxWidth: 'calc(100vw - 40px)', padding: '12px 18px',
+            background: '#fff0f5', color: '#8f0038', borderRadius: 8,
+            boxShadow: '0 2px 12px #0002' }}
+        >
+          Đã thêm sản phẩm vào giỏ hàng.
+        </div>
+      )}
+
       <MenuComponent />
 
       <main className="container category-page category-page-responsive">

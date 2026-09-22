@@ -358,6 +358,7 @@ function CheckoutComponent() {
       localStorage.setItem('latestOrder', JSON.stringify(savedOrder));
       localStorage.removeItem('cart');
       clearVoucherStorage();
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
 
       alert('Đặt hàng thành công!');
       navigate('/order-success');

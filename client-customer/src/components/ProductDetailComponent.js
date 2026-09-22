@@ -190,6 +190,14 @@ function formatReviewDate(value) {
 }
 
 function ProductDetailComponent() {
+  const [cartFeedback, setCartFeedback] = useState(0);
+
+  useEffect(() => {
+    if (!cartFeedback) return;
+    const timeout = setTimeout(() => setCartFeedback(0), 3000);
+    return () => clearTimeout(timeout);
+  }, [cartFeedback]);
+
   const { id } =
     useParams();
 
@@ -671,12 +679,10 @@ function ProductDetailComponent() {
       )
     );
 
-    if (showAlert) {
-      alert(
-        'Đã thêm vào giỏ hàng!'
-      );
+    window.dispatchEvent(new CustomEvent('cartUpdated'));
 
-      window.location.reload();
+    if (showAlert) {
+      setCartFeedback(value => value + 1);
     }
 
     return true;
@@ -788,6 +794,17 @@ function ProductDetailComponent() {
     <div>
       <MenuComponent />
 
+      {cartFeedback > 0 && (
+        <div
+          role="status"
+          style={{ position: 'fixed', top: 100, right: 20, zIndex: 1000,
+            maxWidth: 'calc(100vw - 40px)', padding: '12px 18px',
+            background: '#fff0f5', color: '#8f0038', borderRadius: 8,
+            boxShadow: '0 2px 12px #0002' }}
+        >
+          Đã thêm sản phẩm vào giỏ hàng.
+        </div>
+      )}
       <main className="container product-detail-page product-detail-full-page">
         <nav
           className="product-breadcrumb"

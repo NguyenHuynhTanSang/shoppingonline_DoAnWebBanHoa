@@ -198,6 +198,7 @@ function CartComponent() {
           newCart
         )
       );
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
     };
 
   const clearVoucherStorage =

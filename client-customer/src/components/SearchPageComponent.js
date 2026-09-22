@@ -382,6 +382,14 @@ function getPricingInfo(product) {
 }
 
 function SearchPageComponent() {
+  const [cartFeedback, setCartFeedback] = useState(0);
+
+  useEffect(() => {
+    if (!cartFeedback) return;
+    const timeout = setTimeout(() => setCartFeedback(0), 3000);
+    return () => clearTimeout(timeout);
+  }, [cartFeedback]);
+
   const [searchParams] =
     useSearchParams();
 
@@ -802,17 +810,26 @@ function SearchPageComponent() {
         )
       );
 
-      alert(
-        'Đã thêm vào giỏ hàng!'
-      );
-
-      window.location.reload();
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      setCartFeedback(value => value + 1);
     };
 
   return (
     <div>
       <MenuComponent />
 
+
+      {cartFeedback > 0 && (
+        <div
+          role="status"
+          style={{ position: 'fixed', top: 100, right: 20, zIndex: 1000,
+            maxWidth: 'calc(100vw - 40px)', padding: '12px 18px',
+            background: '#fff0f5', color: '#8f0038', borderRadius: 8,
+            boxShadow: '0 2px 12px #0002' }}
+        >
+          Đã thêm sản phẩm vào giỏ hàng.
+        </div>
+      )}
       <main className="wf-search-page">
         <header className="wf-search-heading">
           <h1 className="wf-search-title">
