@@ -10,6 +10,19 @@ function formatMoney(value) {
   ).toLocaleString('vi-VN');
 }
 
+function formatOrderDate(value) {
+  if (
+    (typeof value !== 'string' && typeof value !== 'number') ||
+    String(value).trim() === ''
+  ) return 'Chưa có';
+
+  const numericValue = Number(value);
+  const date = new Date(Number.isFinite(numericValue) ? numericValue : value);
+  return Number.isNaN(date.getTime())
+    ? 'Chưa có'
+    : date.toLocaleString('vi-VN');
+}
+
 function getLatestOrder() {
   try {
     const rawOrder =
@@ -198,8 +211,7 @@ function OrderSuccessComponent() {
                     </span>
 
                     <strong>
-                      {order.createdAt ||
-                        'Chưa có'}
+                      {formatOrderDate(order.cdate ?? order.createdAt)}
                     </strong>
                   </div>
 
@@ -262,7 +274,7 @@ function OrderSuccessComponent() {
             </Link>
 
             <Link
-              to="/category/bo-hoa-8-3"
+              to="/"
               className="wf-order-success-text-button"
             >
               Tiếp tục mua sắm →
