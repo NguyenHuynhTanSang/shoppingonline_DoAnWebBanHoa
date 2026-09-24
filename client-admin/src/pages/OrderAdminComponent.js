@@ -848,15 +848,28 @@ const handleCompleteDelivery = async (order) => {
       const ok = window.confirm(confirmMessage);
       if (!ok) return;
 
-      await Promise.all(
+      const results = await Promise.allSettled(
         selectedIds.map((id) =>
           API.put(`/admin/orders/${id}/status`, { status: bulkStatus })
         )
       );
 
-      alert('Cập nhật trạng thái hàng loạt thành công!');
-      setSelectedIds([]);
-      loadOrders();
+      const failedIds = selectedIds.filter((id, index) =>
+        results[index].status !== 'fulfilled' || !results[index].value?.data?.success
+      );
+      const total = results.length;
+      const failedCount = failedIds.length;
+      const successCount = total - failedCount;
+
+      if (failedCount === 0) {
+        alert('Cập nhật trạng thái hàng loạt thành công!');
+      } else if (successCount === 0) {
+        alert(`Không cập nhật được ${total} đơn hàng. Vui lòng kiểm tra và thử lại.`);
+      } else {
+        alert(`Đã cập nhật ${successCount}/${total} đơn hàng. ${failedCount} đơn không cập nhật được.`);
+      }
+      setSelectedIds(failedIds);
+      await loadOrders();
     } catch (err) {
       console.error('Bulk update error:', err);
       alert(err.response?.data?.message || 'Lỗi cập nhật trạng thái hàng loạt.');
