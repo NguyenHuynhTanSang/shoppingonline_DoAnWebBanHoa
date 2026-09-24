@@ -233,6 +233,10 @@ function ProductAdminComponent() {
         return;
       }
 
+      if (action === 'decrease' && !window.confirm(
+        `Sản phẩm: ${product.name}\nTồn hiện tại: ${Number(product.stock || 0)}\nTrừ: ${quantity}\nTồn dự kiến: ${Number(product.stock || 0) - quantity}`
+      )) return;
+
       setSavingId(product._id);
 
       const res = await API.put(`/admin/products/${product._id}/stock`, {
@@ -262,6 +266,10 @@ function ProductAdminComponent() {
         alert('Tồn kho không được âm');
         return;
       }
+
+      if (!window.confirm(
+        `Sản phẩm: ${product.name}\nTồn hiện tại: ${Number(product.stock || 0)}\nĐặt lại thành: ${stock}\nTồn dự kiến: ${stock}`
+      )) return;
 
       setSavingId(product._id);
 
