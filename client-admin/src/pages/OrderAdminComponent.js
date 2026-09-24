@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import API from '../services/api';
 import LayoutComponent from '../components/LayoutComponent';
 
@@ -142,6 +142,8 @@ function OrderAdminComponent() {
   const [loadError, setLoadError] = useState('');
   const [openOrderId, setOpenOrderId] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState({});
+  const [statusBusy, setStatusBusy] = useState({});
+  const statusBusyRef = useRef(new Set());
   const [selectedIds, setSelectedIds] = useState([]);
 
   const [staffs, setStaffs] = useState([]);
@@ -406,6 +408,7 @@ const updateDeliveryFailureDraft = (orderId, patch) => {
   };
 
   const handleSaveStatus = async (orderId) => {
+    if (statusBusyRef.current.has(orderId)) return;
     try {
       const targetOrder = orders.find((item) => item._id === orderId);
       const currentStatus = normalizeStatus(targetOrder?.status);
@@ -431,6 +434,9 @@ const updateDeliveryFailureDraft = (orderId, patch) => {
         if (!ok) return;
       }
 
+      statusBusyRef.current.add(orderId);
+      setStatusBusy((prev) => ({ ...prev, [orderId]: true }));
+
       const res = await API.put(`/admin/orders/${orderId}/status`, {
         status: newStatus
       });
@@ -444,6 +450,9 @@ const updateDeliveryFailureDraft = (orderId, patch) => {
     } catch (err) {
       console.error('Update status error:', err);
       alert(err.response?.data?.message || 'Lỗi cập nhật trạng thái đơn hàng.');
+    } finally {
+      statusBusyRef.current.delete(orderId);
+      setStatusBusy((prev) => ({ ...prev, [orderId]: false }));
     }
   };
 
@@ -2096,7 +2105,7 @@ const failureDraft =
                         <select
                           value={selectedStatuses[order._id] || order.status || 'pending'}
                           onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                          disabled={!(nextStatuses[normalizeStatus(order.status)] || []).length}
+                          disabled={statusBusy[order._id] || !(nextStatuses[normalizeStatus(order.status)] || []).length}
                         >
                           <option value="pending" disabled={!canSelectStatus(normalizeStatus(order.status), "pending")}>Chờ xác nhận</option>
                           <option value="approved" disabled={!canSelectStatus(normalizeStatus(order.status), "approved")}>Đã xác nhận</option>
@@ -2108,13 +2117,13 @@ const failureDraft =
 
                         <button
                           onClick={() => handleSaveStatus(order._id)}
-                          disabled={!(nextStatuses[normalizeStatus(order.status)] || []).length}
+                          disabled={statusBusy[order._id] || !(nextStatuses[normalizeStatus(order.status)] || []).length}
                           style={{
                             opacity: isCanceled ? 0.6 : 1,
                             cursor: isCanceled ? 'not-allowed' : 'pointer'
                           }}
                         >
-                          Cập nhật trạng thái
+                          {statusBusy[order._id] ? 'Đang cập nhật...' : 'Cập nhật trạng thái'}
                         </button>
                       </div>
                     </div>
