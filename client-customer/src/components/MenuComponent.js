@@ -249,6 +249,8 @@ function MenuComponent() {
   const forcedLogoutRef =
     useRef(false);
 
+  const sessionRequestRef = useRef(0);
+
   const profileRef =
     useRef(null);
 
@@ -386,6 +388,7 @@ function MenuComponent() {
 
   const checkCustomerSession =
     useCallback(async () => {
+      const requestId = ++sessionRequestRef.current;
       const token =
         localStorage.getItem(
           'customerToken'
@@ -394,6 +397,10 @@ function MenuComponent() {
       if (!token) {
         return;
       }
+
+      const isCurrentRequest = () =>
+        requestId === sessionRequestRef.current &&
+        localStorage.getItem('customerToken') === token;
 
       try {
         const res =
@@ -406,6 +413,8 @@ function MenuComponent() {
               }
             }
           );
+
+        if (!isCurrentRequest()) return;
 
         if (
           res.data?.success &&
@@ -426,6 +435,7 @@ function MenuComponent() {
           );
         }
       } catch (error) {
+        if (!isCurrentRequest()) return;
         console.error(
           'CHECK CUSTOMER SESSION ERROR:',
           error
@@ -535,6 +545,7 @@ function MenuComponent() {
     checkCustomerSession();
 
     return () => {
+      sessionRequestRef.current += 1;
       window.removeEventListener(
         'storage',
         refreshCart
