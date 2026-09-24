@@ -29,6 +29,8 @@ test.each([5, 4, 0])('%i successes are counted, selection retained only for fail
   await waitFor(() => expect(API.get).toHaveBeenCalledTimes(2));
   await screen.findByText('Mã đơn: A');
   expect(API.put).toHaveBeenCalledTimes(5);
+  expect(screen.getByText('Cập nhật hàng loạt')).not.toBeDisabled();
+  expect(document.querySelector('.admin-bulk-actions select')).not.toBeDisabled();
   ['A', 'B', 'C', 'D', 'E'].forEach((id, i) => {
     expect(API.put).toHaveBeenCalledWith(`/admin/orders/${id}/status`, { status: 'approved' });
     const card = screen.getByText(`Mã đơn: ${id}`).closest('.admin-order-card');
@@ -67,4 +69,42 @@ test('no selection and canceled confirmation do not start a batch', async () => 
   fireEvent.click(screen.getByText('Cập nhật hàng loạt'));
   expect(API.put).not.toHaveBeenCalled();
   expect(API.get).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Cập nhật hàng loạt')).not.toBeDisabled();
+  expect(document.querySelector('.admin-bulk-actions select')).not.toBeDisabled();
+});
+
+test('rapid double submit sends one batch and locks only bulk controls through reload', async () => {
+  const finish = [];
+  API.put.mockImplementation(() => new Promise(resolve => finish.push(resolve)));
+  const { container } = render(<OrderAdminComponent />);
+  await screen.findByText('Mã đơn: A');
+  fireEvent.click(screen.getAllByText('Xem chi tiết')[0]);
+  fireEvent.click(screen.getByLabelText('Chọn tất cả đơn đang lọc'));
+  const button = screen.getByText('Cập nhật hàng loạt');
+  act(() => { button.click(); button.click(); });
+  expect(API.put).toHaveBeenCalledTimes(5);
+  expect(window.confirm).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Đang cập nhật...')).toBeDisabled();
+  expect(container.querySelector('.admin-bulk-actions select')).toBeDisabled();
+  expect(container.querySelector('.admin-order-actions select')).not.toBeDisabled();
+  expect(screen.getByText('Cập nhật trạng thái')).not.toBeDisabled();
+  let finishReload;
+  API.get.mockImplementationOnce(() => new Promise(resolve => { finishReload = resolve; }));
+  await act(async () => finish.forEach(resolve => resolve({ data: { success: true } })));
+  expect(screen.getByText('Đang cập nhật...')).toBeDisabled();
+  await act(async () => finishReload({ data: { success: true, orders: [] } }));
+  expect(screen.getByText('Cập nhật hàng loạt')).not.toBeDisabled();
+  expect(container.querySelector('.admin-bulk-actions select')).not.toBeDisabled();
+});
+
+test('unexpected synchronous request error releases bulk guard for retry', async () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  API.put.mockImplementation(() => { throw new Error('Synthetic failure'); });
+  render(<OrderAdminComponent />);
+  await screen.findByText('Mã đơn: A');
+  fireEvent.click(screen.getByLabelText('Chọn tất cả đơn đang lọc'));
+  fireEvent.click(screen.getByText('Cập nhật hàng loạt'));
+  expect(screen.getByText('Cập nhật hàng loạt')).not.toBeDisabled();
+  fireEvent.click(screen.getByText('Cập nhật hàng loạt'));
+  expect(API.put).toHaveBeenCalledTimes(2);
 });

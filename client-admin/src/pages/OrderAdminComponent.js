@@ -211,6 +211,8 @@ const updateDeliveryFailureDraft = (orderId, patch) => {
   const [dateFilter, setDateFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [bulkStatus, setBulkStatus] = useState('approved');
+  const [bulkStatusBusy, setBulkStatusBusy] = useState(false);
+  const bulkStatusBusyRef = useRef(false);
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailDraft, setEmailDraft] = useState({
@@ -823,6 +825,7 @@ const handleCompleteDelivery = async (order) => {
 };
 
   const handleBulkUpdateStatus = async () => {
+    if (bulkStatusBusyRef.current) return;
     try {
       if (selectedIds.length === 0) {
         alert('Vui lòng chọn ít nhất 1 đơn hàng.');
@@ -847,6 +850,9 @@ const handleCompleteDelivery = async (order) => {
 
       const ok = window.confirm(confirmMessage);
       if (!ok) return;
+
+      bulkStatusBusyRef.current = true;
+      setBulkStatusBusy(true);
 
       const results = await Promise.allSettled(
         selectedIds.map((id) =>
@@ -873,6 +879,9 @@ const handleCompleteDelivery = async (order) => {
     } catch (err) {
       console.error('Bulk update error:', err);
       alert(err.response?.data?.message || 'Lỗi cập nhật trạng thái hàng loạt.');
+    } finally {
+      bulkStatusBusyRef.current = false;
+      setBulkStatusBusy(false);
     }
   };
 
@@ -1347,7 +1356,7 @@ WIND FLOWER`;
           <div className="admin-bulk-actions">
             <span>Đã chọn: {selectedIds.length}</span>
 
-            <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+            <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkStatusBusy}>
               <option value="pending" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "pending"))}>Chờ xác nhận</option>
               <option value="approved" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "approved"))}>Đã xác nhận</option>
               <option value="preparing" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "preparing"))}>Đang chuẩn bị</option>
@@ -1356,7 +1365,9 @@ WIND FLOWER`;
               <option value="canceled" disabled={!selectedIds.length || orders.filter(order => selectedIds.includes(order._id)).some(order => !canSelectStatus(normalizeStatus(order.status), "canceled"))}>Đã hủy</option>
             </select>
 
-            <button onClick={handleBulkUpdateStatus}>Cập nhật hàng loạt</button>
+            <button onClick={handleBulkUpdateStatus} disabled={bulkStatusBusy}>
+              {bulkStatusBusy ? 'Đang cập nhật...' : 'Cập nhật hàng loạt'}
+            </button>
           </div>
         </div>
 
