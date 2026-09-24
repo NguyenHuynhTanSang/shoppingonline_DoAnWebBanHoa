@@ -139,6 +139,7 @@ const getStoredAdminUser = () => {
 function OrderAdminComponent() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [openOrderId, setOpenOrderId] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState({});
   const [selectedIds, setSelectedIds] = useState([]);
@@ -229,6 +230,7 @@ const updateDeliveryFailureDraft = (orderId, patch) => {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError('');
       const res = await API.get('/admin/orders');
 
       if (res.data && res.data.success) {
@@ -249,12 +251,12 @@ const updateDeliveryFailureDraft = (orderId, patch) => {
         setSelectedDeliveryStaff(initDeliveryStaff);
       } else {
         setOrders([]);
-        alert(res.data?.message || 'Không tải được danh sách đơn hàng.');
+        setLoadError(res.data?.message || 'Không tải được danh sách đơn hàng.');
       }
     } catch (err) {
       console.error('Load orders error:', err);
       setOrders([]);
-      alert(err.response?.data?.message || 'Lỗi tải đơn hàng.');
+      setLoadError(err.response?.data?.message || 'Lỗi tải đơn hàng.');
     } finally {
       setLoading(false);
     }
@@ -1340,9 +1342,17 @@ WIND FLOWER`;
           <div className="admin-empty-box">
             <p>Đang tải đơn hàng...</p>
           </div>
+        ) : loadError ? (
+          <div className="admin-empty-box" role="alert">
+            <h2>Không thể tải đơn hàng</h2>
+            <p>{loadError}</p>
+            <button type="button" className="admin-reset-filter-btn" onClick={loadOrders}>
+              Thử lại
+            </button>
+          </div>
         ) : filteredOrders.length === 0 ? (
           <div className="admin-empty-box">
-            <p>Không có đơn hàng phù hợp bộ lọc.</p>
+            <p>{orders.length === 0 ? 'Chưa có đơn hàng.' : 'Không có đơn hàng phù hợp bộ lọc.'}</p>
           </div>
         ) : (
           <div className="admin-order-list">
