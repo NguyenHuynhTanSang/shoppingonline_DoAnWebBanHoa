@@ -70,11 +70,6 @@ function LoginComponent() {
         'Đăng nhập thất bại.'
       );
     } catch (error) {
-      console.error(
-        'LOGIN ERROR:',
-        error
-      );
-
       if (error.response) {
         setMessage(
           error.response.data?.message ||

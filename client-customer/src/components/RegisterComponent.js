@@ -148,11 +148,6 @@ function RegisterComponent() {
           'Đăng ký thất bại.'
         );
       } catch (error) {
-        console.error(
-          'REGISTER ERROR:',
-          error
-        );
-
         if (error.response) {
           setMessage(
             error.response.data
