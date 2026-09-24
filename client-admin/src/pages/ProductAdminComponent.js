@@ -44,8 +44,11 @@ function parseMoneyInput(value) {
 function ProductAdminComponent() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [message, setMessage] = useState('');
+  const [productLoadError, setProductLoadError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [categoryLoadError, setCategoryLoadError] = useState('');
+  const [categoryLoading, setCategoryLoading] = useState(true);
+  const categoryUnavailable = categoryLoading || Boolean(categoryLoadError);
   const [savingId, setSavingId] = useState('');
   const [adjustments, setAdjustments] = useState({});
   const [classificationEdits, setClassificationEdits] = useState({});
@@ -117,6 +120,7 @@ function ProductAdminComponent() {
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
+      setProductLoadError('');
       const res = await API.get('/admin/products');
 
       if (res.data && res.data.success) {
@@ -140,14 +144,14 @@ function ProductAdminComponent() {
 
         setAdjustments(initAdjustments);
         setClassificationEdits(initClassification);
-        setMessage('');
+        setProductLoadError('');
       } else {
         setProducts([]);
-        setMessage(res.data?.message || 'Không thể tải danh sách sản phẩm');
+        setProductLoadError(res.data?.message || 'Không thể tải danh sách sản phẩm');
       }
     } catch (error) {
       console.error(error);
-      setMessage('Không thể tải danh sách sản phẩm');
+      setProductLoadError('Không thể tải danh sách sản phẩm');
       setProducts([]);
     } finally {
       setLoading(false);
@@ -155,16 +159,22 @@ function ProductAdminComponent() {
   }, []);
 
   const fetchCategories = useCallback(async () => {
+    setCategoryLoading(true);
+    setCategoryLoadError('');
     try {
       const res = await API.get('/admin/categories');
       if (res.data && res.data.success) {
         setCategories(res.data.categories || []);
       } else {
+        setCategoryLoadError(res.data?.message || 'Không thể tải danh mục.');
         setCategories([]);
       }
     } catch (error) {
       console.error(error);
       setCategories([]);
+      setCategoryLoadError('Không thể tải danh mục.');
+    } finally {
+      setCategoryLoading(false);
     }
   }, []);
 
@@ -317,6 +327,7 @@ function ProductAdminComponent() {
   };
 
   const handleSaveClassification = async (product) => {
+    if (categoryUnavailable) return;
     try {
       const edit = classificationEdits[product._id] || {};
       const selectedCategory = categories.find(
@@ -368,6 +379,7 @@ function ProductAdminComponent() {
 
   const handleCreateProduct = async (e) => {
     e.preventDefault();
+    if (categoryUnavailable) return;
 
     const name = String(newProduct.name || '').trim();
     const price = parseMoneyInput(newProduct.price);
@@ -465,6 +477,7 @@ function ProductAdminComponent() {
 
   const handleUpdateProduct = async (e) => {
     e.preventDefault();
+    if (categoryUnavailable) return;
 
     const name = String(editProduct.name || '').trim();
     const price = parseMoneyInput(editProduct.price);
@@ -694,6 +707,17 @@ function ProductAdminComponent() {
         )}
       </div>
 
+      {categoryLoadError && (
+        <div className="admin-empty-box" role="alert">
+          <h2>Không thể tải danh mục</h2>
+          <p>{categoryLoadError}</p>
+          <button type="button" className="admin-reset-filter-btn" onClick={fetchCategories}>
+            Thử lại danh mục
+          </button>
+        </div>
+      )}
+      {categoryLoading && <p role="status">Đang tải danh mục...</p>}
+
       {showAddForm && (
         <form
           onSubmit={handleCreateProduct}
@@ -744,6 +768,7 @@ function ProductAdminComponent() {
             />
 
             <select
+              disabled={categoryUnavailable}
               value={newProduct.categoryId}
               onChange={(e) => {
                 handleChangeNewProduct('categoryId', e.target.value);
@@ -761,7 +786,7 @@ function ProductAdminComponent() {
             <select
               value={newProduct.submenuId}
               onChange={(e) => handleChangeNewProduct('submenuId', e.target.value)}
-              disabled={!selectedAddCategory}
+              disabled={categoryUnavailable || !selectedAddCategory}
             >
               <option value="">Chọn menu con</option>
               {addFormSubmenus.map((submenu) => (
@@ -817,7 +842,7 @@ function ProductAdminComponent() {
           )}
 
           <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
-            <button type="submit" disabled={creating}>
+            <button type="submit" disabled={creating || categoryUnavailable}>
               {creating ? 'Đang thêm...' : 'Lưu sản phẩm'}
             </button>
 
@@ -884,6 +909,7 @@ function ProductAdminComponent() {
             />
 
             <select
+              disabled={categoryUnavailable}
               value={editProduct.categoryId}
               onChange={(e) => {
                 handleChangeEditProduct('categoryId', e.target.value);
@@ -901,7 +927,7 @@ function ProductAdminComponent() {
             <select
               value={editProduct.submenuId}
               onChange={(e) => handleChangeEditProduct('submenuId', e.target.value)}
-              disabled={!selectedEditCategory}
+              disabled={categoryUnavailable || !selectedEditCategory}
             >
               <option value="">Chọn menu con</option>
               {editFormSubmenus.map((submenu) => (
@@ -957,7 +983,7 @@ function ProductAdminComponent() {
           )}
 
           <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
-            <button type="submit" disabled={updating}>
+            <button type="submit" disabled={updating || categoryUnavailable}>
               {updating ? 'Đang cập nhật...' : 'Lưu cập nhật'}
             </button>
 
@@ -1012,7 +1038,7 @@ function ProductAdminComponent() {
           <option value="out">Hết hàng</option>
         </select>
 
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+        <select disabled={categoryUnavailable} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
           <option value="all">Tất cả danh mục</option>
           {categories.map((cat) => (
             <option key={cat._id} value={cat._id}>
@@ -1041,11 +1067,17 @@ function ProductAdminComponent() {
         </button>
       </div>
 
-      {message && <p className="error-text">{message}</p>}
-
       {loading ? (
         <div className="admin-empty-box">
           <p>Đang tải dữ liệu...</p>
+        </div>
+      ) : productLoadError ? (
+        <div className="admin-empty-box" role="alert">
+          <h2>Không thể tải sản phẩm</h2>
+          <p>{productLoadError}</p>
+          <button type="button" className="admin-reset-filter-btn" onClick={fetchProducts}>
+            Thử lại sản phẩm
+          </button>
         </div>
       ) : (
         <table className="admin-table">
@@ -1103,6 +1135,7 @@ function ProductAdminComponent() {
                         }}
                       >
                         <select
+                          disabled={categoryUnavailable}
                           value={classificationEdits[item._id]?.categoryId || ''}
                           onChange={(e) => handleChangeCategory(item._id, e.target.value)}
                         >
@@ -1117,7 +1150,7 @@ function ProductAdminComponent() {
                         <select
                           value={classificationEdits[item._id]?.submenuId || ''}
                           onChange={(e) => handleChangeSubmenu(item._id, e.target.value)}
-                          disabled={!selectedCategory}
+                          disabled={categoryUnavailable || !selectedCategory}
                         >
                           <option value="">Chọn menu con</option>
                           {availableSubmenus.map((submenu) => (
@@ -1129,7 +1162,7 @@ function ProductAdminComponent() {
 
                         <button
                           onClick={() => handleSaveClassification(item)}
-                          disabled={savingId === item._id}
+                          disabled={categoryUnavailable || savingId === item._id}
                         >
                           {savingId === item._id ? 'Đang lưu...' : 'Lưu phân loại'}
                         </button>
@@ -1218,7 +1251,7 @@ function ProductAdminComponent() {
               })
             ) : (
               <tr>
-                <td colSpan="12">Không có sản phẩm phù hợp</td>
+                <td colSpan="12">{products.length === 0 ? 'Chưa có sản phẩm' : 'Không có sản phẩm phù hợp bộ lọc/tìm kiếm'}</td>
               </tr>
             )}
           </tbody>
