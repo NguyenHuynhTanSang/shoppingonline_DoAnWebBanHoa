@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 const service = require('../services/SupportChatService');
+const corsPolicy = require('../utils/CorsPolicy');
 let io;
 const windows = new Map();
 function throttle(key) {
@@ -35,7 +36,7 @@ async function publishAdmins(event, request) {
   }
 }
 function attach(server) {
-  io = new Server(server, { maxHttpBufferSize: 12000, cors: { origin: true, methods: ['GET', 'POST'] } });
+  io = new Server(server, { maxHttpBufferSize: 12000, cors: { origin: corsPolicy.origin, methods: ['GET', 'POST'] }, allowRequest: corsPolicy.allowRequest });
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
