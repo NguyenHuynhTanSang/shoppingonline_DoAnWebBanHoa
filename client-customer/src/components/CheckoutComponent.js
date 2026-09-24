@@ -18,7 +18,38 @@ function getShippingFee(subtotal) {
   return Number(subtotal || 0) >= 1500000 ? 0 : 30000;
 }
 
+function safeParseJSON(value, fallback, validate) {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed !== null && validate(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readCustomer() {
+  return safeParseJSON(localStorage.getItem('customer'), null, (value) =>
+    isRecord(value) &&
+    ['_id', 'username', 'name', 'fullName', 'phone'].every((key) =>
+      value[key] == null || typeof value[key] === 'string'
+    ) &&
+    ['_id', 'username', 'name', 'fullName'].some((key) => value[key]?.trim())
+  );
+}
+
 function normalizeCartItems(rawCart) {
+  if (!Array.isArray(rawCart) || !rawCart.every((item) =>
+    isRecord(item) &&
+    ['_id', 'name', 'image'].every((key) => item[key] == null || typeof item[key] === 'string') &&
+    ['price', 'originalPrice', 'discountPercent', 'discountPrice', 'quantity'].every((key) =>
+      item[key] == null ||
+      ((typeof item[key] === 'number' || typeof item[key] === 'string') && Number.isFinite(Number(item[key])))
+    )
+  )) return [];
   return (Array.isArray(rawCart) ? rawCart : [])
     .map((item) => ({
       _id: String(item._id || '').trim(),
@@ -114,14 +145,13 @@ function CheckoutComponent() {
   );
 
   useEffect(() => {
-    const rawCart = JSON.parse(localStorage.getItem('cart')) || [];
+    const rawCart = safeParseJSON(localStorage.getItem('cart'), [], Array.isArray);
     const cartData = normalizeCartItems(rawCart);
 
     const savedDiscount = Number(localStorage.getItem('cartDiscount')) || 0;
     const savedVoucher = localStorage.getItem('cartVoucherCode') || '';
 
-    const customerRaw = localStorage.getItem('customer');
-    const customer = customerRaw ? JSON.parse(customerRaw) : null;
+    const customer = readCustomer();
     const token = localStorage.getItem('customerToken');
 
     if (!customer || !token) {
@@ -263,8 +293,7 @@ function CheckoutComponent() {
     e.preventDefault();
     if (checkoutInFlight.current) return;
 
-    const customerRaw = localStorage.getItem('customer');
-    const customer = customerRaw ? JSON.parse(customerRaw) : null;
+    const customer = readCustomer();
     const token = localStorage.getItem('customerToken');
 
     if (!customer || !token) {
